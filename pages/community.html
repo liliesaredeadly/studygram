@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Study together in a shared library session or talk with other students in a Studygram group chat.">
+  <meta name="theme-color" content="#20292b">
+  <title>Community · Studygram</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../community.css">
+  <script defer src="../js/private-session.js"></script>
+  <script defer src="../js/storage.js"></script>
+  <script defer src="../js/app.js"></script>
+  <script defer src="../js/community-voice.js"></script>
+  <script defer src="../js/community.js"></script>
+</head>
+<body class="community-page">
+  <a class="community-skip" href="#community-main">Skip to community</a>
+  <header>
+    <nav class="navbar world-navigation" aria-label="Studygram">
+      <a class="navbar-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+        <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+        <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
+      </a>
+      <div class="navbar-links">
+        <a href="lesson.html">Learn</a>
+        <a href="explore.html">Explore</a>
+        <a href="community.html" class="active" aria-current="page">Community</a>
+      </div>
+    </nav>
+  </header>
+  <main class="community-shell" id="community-main" tabindex="-1">
+    <section class="community-masthead" aria-labelledby="community-title">
+      <div>
+        <p class="community-kicker">Studygram community</p>
+        <h1 id="community-title">The student common room.</h1>
+        <p>Settle in for a shared study session, or talk through an idea with people who are curious about the same things.</p>
+      </div>
+      <svg class="community-mark" viewBox="0 0 240 158" aria-hidden="true" focusable="false">
+        <defs><pattern id="community-grid" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M0 12V0h12" fill="none" stroke="#96a9a3" stroke-width=".6"/></pattern></defs>
+        <rect x="14" y="12" width="212" height="134" fill="url(#community-grid)"/>
+        <path d="M37 34h106a9 9 0 0 1 9 9v59a9 9 0 0 1-9 9H67l-22 14v-14h-8a9 9 0 0 1-9-9V43a9 9 0 0 1 9-9Z" fill="#f8f7ef" stroke="#31584e" stroke-width="1.4"/>
+        <path d="M49 57h65m-65 14h83M49 85h53" fill="none" stroke="#557a6b" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M137 62h69a7 7 0 0 1 7 7v45a7 7 0 0 1-7 7h-7v13l-18-13h-44a7 7 0 0 1-7-7V69a7 7 0 0 1 7-7Z" fill="#dbe8df" stroke="#31584e" stroke-width="1.4"/>
+        <circle cx="155" cy="91" r="2.8" fill="#31584e"/><circle cx="171" cy="91" r="2.8" fill="#31584e"/><circle cx="187" cy="91" r="2.8" fill="#31584e"/>
+      </svg>
+    </section>
+
+    <p class="community-status" id="community-status" role="status">Checking your community session…</p>
+    <button type="button" class="community-button" id="community-retry" hidden>Try again</button>
+    <noscript><p>Enable JavaScript to sign in and open the rooms.</p></noscript>
+
+    <section class="community-gate" id="community-gate" aria-labelledby="community-auth-title" hidden>
+      <div class="community-terms">
+        <p class="community-kicker">Before you join</p>
+        <h2>Make space for other students.</h2>
+        <p>Room conversations are visible to all community members. Use a nickname and keep real names, school names, contact details and other personal information out of posts.</p>
+        <p>Discuss the work, be kind to the person, and use Report if something needs a closer look.</p>
+      </div>
+      <form class="community-form community-auth" id="community-auth" method="post" novalidate>
+        <h2 id="community-auth-title">Sign in to Community</h2>
+        <p>Use your Studygram account to access Community.</p>
+        <label for="community-username">Community nickname</label>
+        <input id="community-username" name="username" maxlength="24" minlength="3" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="community-name-help community-auth-error" required>
+        <small id="community-name-help">3–24 letters, numbers, underscores or hyphens. Start with a letter or number. Members see this nickname.</small>
+        <label for="community-password">Password</label>
+        <div class="community-secret">
+          <input id="community-password" name="password" type="password" maxlength="128" autocomplete="current-password" aria-describedby="community-password-help community-auth-error" required>
+          <button type="button" class="community-text-button" id="community-password-toggle" aria-controls="community-password" aria-label="Show password">Show</button>
+        </div>
+        <small id="community-password-help" hidden>Use at least 15 characters.</small>
+        <p class="community-error" id="community-auth-error" role="alert"></p>
+        <div class="community-actions">
+          <button type="submit" class="community-button community-primary" id="community-auth-submit">Sign in</button>
+          <button type="button" class="community-text-button" id="community-auth-mode">Create an account</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="community-board" id="community-board" aria-label="Community rooms" data-mobile-view="chat" hidden>
+      <nav class="community-rail" aria-label="Community shortcuts">
+        <a class="community-rail-home" href="../index.html" aria-label="Studygram home" title="Studygram home">
+          <img src="../assets/studygram-mark.svg" width="30" height="30" alt="">
+        </a>
+        <button type="button" data-community-view="channels" aria-controls="community-sidebar" aria-label="Channels" title="Channels">
+          <span aria-hidden="true">#</span>
+        </button>
+        <button type="button" data-community-standings aria-controls="community-standings" aria-expanded="true" aria-label="Standings" title="Standings">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V13h5v7m1-11h5v11m1-15h4v15M3 20h18"/></svg>
+        </button>
+      </nav>
+      <aside class="community-sidebar" id="community-sidebar" aria-labelledby="community-room-label" tabindex="-1">
+        <div class="community-sidebar-title">
+          <strong>Studygram</strong>
+          <p id="community-room-label">Common room</p>
+        </div>
+        <nav aria-labelledby="community-room-label" id="community-rooms"></nav>
+        <div class="community-membership">
+          <span class="community-membership-avatar" id="community-membership-avatar" aria-hidden="true"></span>
+          <div class="community-membership-account">
+            <strong id="community-member"></strong>
+            <button type="button" class="community-text-button" id="community-sign-out">Sign out</button>
+          </div>
+        </div>
+      </aside>
+      <div class="community-main-panel" id="community-conversation" tabindex="-1">
+        <section id="community-library" aria-labelledby="community-library-title">
+          <header class="community-panel-head">
+            <div><p class="community-kicker">Study together</p><h2 id="community-library-title" tabindex="-1">The Library</h2><p>Join a shared timer and chat with the students studying alongside you.</p></div>
+            <div class="community-panel-actions">
+              <button type="button" class="community-button community-open-channels" data-community-view="channels" aria-controls="community-sidebar">Channels</button>
+              <button type="button" class="community-button" id="community-refresh-library">Refresh sessions</button>
+              <button type="button" class="community-button" data-community-standings aria-controls="community-standings" aria-expanded="true">Standings</button>
+            </div>
+          </header>
+          <details class="community-compose" id="community-compose">
+            <summary>Start a study session</summary>
+            <form class="community-form" id="community-new-session" method="post" novalidate>
+              <label for="community-session-title">What are you studying?</label>
+              <input id="community-session-title" name="title" maxlength="80" aria-describedby="community-session-note community-compose-error" required>
+              <small id="community-session-note">Use a topic or goal. Other students will see this title.</small>
+              <fieldset class="community-duration">
+                <legend>Focus time</legend>
+                <label><input type="radio" name="duration" value="25" checked> 25 minutes</label>
+                <label><input type="radio" name="duration" value="50"> 50 minutes</label>
+              </fieldset>
+              <p class="community-error" id="community-compose-error" role="alert"></p>
+              <button type="submit" class="community-button community-primary">Start session</button>
+            </form>
+          </details>
+          <p class="community-board-state" id="community-library-status" role="status"></p>
+          <ul class="community-sessions" id="community-sessions" aria-label="Active study sessions"></ul>
+        </section>
+
+        <section id="community-chat" aria-labelledby="community-chat-title" hidden>
+          <header class="community-panel-head">
+            <div><p class="community-kicker" id="community-chat-kind">Group chat</p><h2 id="community-chat-title" tabindex="-1"></h2><p id="community-chat-description"></p></div>
+            <div class="community-panel-actions">
+              <button type="button" class="community-button community-open-channels" data-community-view="channels" aria-controls="community-sidebar">Channels</button>
+              <button type="button" class="community-button community-refresh-icon" id="community-refresh-chat" aria-label="Refresh chat" title="Refresh chat">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5m-11 5v-5h5M6 8a7 7 0 0 1 11.5-2L20 9M4 15l2.5 3A7 7 0 0 0 18 16"/></svg>
+              </button>
+              <button type="button" class="community-button" data-community-standings aria-controls="community-standings" aria-expanded="true">Standings</button>
+            </div>
+          </header>
+          <div class="community-session-clock" id="community-session-clock" hidden>
+            <div><p class="community-kicker">Shared timer</p><p class="community-time" id="community-time" role="timer" aria-label="Time remaining">--:--</p></div>
+            <div class="community-presence"><p id="community-presence-summary"></p><ul id="community-participants" aria-label="Students in the session"></ul></div>
+            <button type="button" class="community-button" id="community-join-session">Join session</button>
+          </div>
+          <section class="community-voice" id="community-voice" aria-labelledby="community-voice-title" hidden>
+            <header class="community-voice-header">
+              <div>
+                <h3 id="community-voice-title">Study voice</h3>
+                <p>Talk while the shared timer runs.</p>
+              </div>
+              <div class="community-voice-actions">
+                <button type="button" class="community-button community-primary" id="community-voice-join">Join voice</button>
+                <button type="button" class="community-button" id="community-voice-mute" aria-pressed="false" hidden>Mute microphone</button>
+                <button type="button" class="community-button" id="community-voice-leave" hidden>Leave voice</button>
+                <button type="button" class="community-button" id="community-voice-listen" hidden>Enable audio</button>
+              </div>
+            </header>
+            <p class="community-voice-status" id="community-voice-status" role="status"></p>
+            <ul class="community-voice-participants" id="community-voice-members" aria-label="Students in voice"></ul>
+            <div class="community-voice-playback" id="community-voice-audio" hidden></div>
+          </section>
+          <p class="community-qa-guide" id="community-qa-guide" hidden>Ask a question or help someone with an answer. The student who asked can mark one answer helpful to give its author 1 point.</p>
+          <p class="community-board-state" id="community-chat-feedback" role="status"></p>
+          <p class="community-board-state" id="community-chat-status" role="status"></p>
+          <div class="community-chat-log" role="log" aria-label="Chat messages" aria-live="polite" aria-relevant="additions" tabindex="0">
+            <ol class="community-messages" id="community-messages"></ol>
+          </div>
+          <form class="community-form community-message-form" id="community-new-message" method="post" novalidate hidden>
+            <div class="community-compose-mode">
+              <label for="community-message-body" id="community-message-label">Message</label>
+              <button type="button" class="community-text-button" id="community-message-mode" hidden>Ask a question</button>
+            </div>
+            <p class="community-message-reference" id="community-message-context" hidden></p>
+            <div class="community-message-entry">
+              <textarea id="community-message-body" name="body" rows="2" maxlength="1200" aria-describedby="community-message-context community-message-note community-message-error" required></textarea>
+              <button type="submit" class="community-button community-primary" id="community-message-submit">Send message</button>
+            </div>
+            <small id="community-message-note">All members of this room can read this. Leave out personal details.</small>
+            <p class="community-error" id="community-message-error" role="alert"></p>
+          </form>
+        </section>
+      </div>
+      <aside class="community-standings" id="community-standings" aria-labelledby="community-rewards-title" tabindex="-1">
+        <section class="community-rewards" aria-labelledby="community-rewards-title">
+          <h2 class="community-kicker" id="community-rewards-title">Your rewards</h2>
+          <dl class="community-reward-list">
+            <div class="community-reward-total"><dt>Total points</dt><dd id="community-reward-total">—</dd></div>
+            <div><dt>Helpful answers</dt><dd id="community-reward-answers">—</dd></div>
+            <div><dt>Verified achievements</dt><dd id="community-reward-achievements">—</dd></div>
+            <div><dt>Reel likes</dt><dd id="community-reward-reels">—</dd></div>
+          </dl>
+          <p>Earn one point each for generating your first study set, rendering your first reel, and doing either on three consecutive days (UTC).</p>
+        </section>
+        <details class="community-leaderboard" id="community-leaderboard" open>
+          <summary id="community-leaderboard-title">Leaderboard</summary>
+          <p class="community-leaderboard-note">Top 10 by total points from helpful answers, verified achievements, and reel likes.</p>
+          <p class="community-leaderboard-note" id="community-leaderboard-status" role="status"></p>
+          <ol class="community-leaders" id="community-leaders" aria-label="Total reward point rankings" role="list" hidden></ol>
+          <button type="button" class="community-text-button" id="community-leaderboard-retry" hidden>Retry leaderboard</button>
+        </details>
+      </aside>
+      <nav class="community-mobile-nav" aria-label="Community views">
+        <button type="button" data-community-view="channels" aria-controls="community-sidebar" aria-pressed="false">Channels</button>
+        <button type="button" data-community-view="chat" aria-controls="community-conversation" aria-pressed="true">
+          Chat <span class="community-mobile-mic-on">Mic on</span><span class="community-mobile-mic-muted">Muted</span>
+        </button>
+        <button type="button" data-community-view="rewards" aria-controls="community-standings" aria-pressed="false">Rewards <span id="community-mobile-points" aria-hidden="true"></span></button>
+      </nav>
+    </section>
+  </main>
+
+  <dialog class="community-dialog" id="community-dialog" aria-labelledby="community-dialog-title" aria-describedby="community-dialog-description">
+    <form class="community-form" id="community-action-form" method="post" novalidate>
+      <h2 id="community-dialog-title"></h2>
+      <p id="community-dialog-description"></p>
+      <fieldset id="community-report-reasons" hidden>
+        <legend>Why are you reporting this?</legend>
+        <label><input type="radio" name="reason" value="bullying"> Bullying or harassment</label>
+        <label><input type="radio" name="reason" value="personal-info"> Personal information</label>
+        <label><input type="radio" name="reason" value="spam"> Spam</label>
+        <label><input type="radio" name="reason" value="other"> Other concern</label>
+      </fieldset>
+      <p class="community-error" id="community-dialog-error" role="alert"></p>
+      <div class="community-actions">
+        <button type="button" class="community-button" id="community-dialog-cancel" autofocus>Cancel</button>
+        <button type="submit" class="community-button community-primary" id="community-dialog-submit"></button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

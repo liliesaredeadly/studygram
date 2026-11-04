@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a233b">
+  <meta name="description" content="Explore an interest, build an action plan, and make time for what moves you.">
+  <title>The Pursuit | Studygram</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
+  <link rel="stylesheet" href="../pursuit.css">
+  <script defer src="../js/private-session.js"></script>
+  <script defer src="../js/storage.js"></script>
+  <script defer src="../js/app.js"></script>
+  <script defer src="../js/ai.js"></script>
+  <script defer src="../js/pursuit-catalog.js"></script>
+  <script defer src="../js/pursuit-state.js"></script>
+  <script defer src="../js/explore-humanities.js"></script>
+  <script defer src="../js/explore-stem.js"></script>
+  <script defer src="../js/explore-actions.js"></script>
+  <script defer src="../js/pursuit.js"></script>
+</head>
+<body inert class="pursuit-page">
+  <a class="p-skip" href="#pursuit-main">Skip to The Pursuit</a>
+  <header class="p-site-header">
+    <nav class="p-shell p-nav" aria-label="Studygram navigation">
+      <a class="p-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+        <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+        <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
+      </a>
+      <div class="p-nav-links"><a href="explore.html">Explore</a><a href="pursuit.html" aria-current="page">The Pursuit</a></div>
+    </nav>
+  </header>
+  <main id="pursuit-main">
+    <div id="pursuit-content"></div>
+    <noscript><p class="p-shell p-noscript">Enable JavaScript to start a pursuit and save your progress.</p></noscript>
+  </main>
+  <footer class="p-site-footer">
+    <div class="p-shell p-footer-inner">
+      <a class="p-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+        <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+        <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
+      </a>
+      <p>A little practice can take you a long way.</p>
+      <button type="button" class="p-text-button" data-action="privacy">Pursuit privacy</button>
+    </div>
+  </footer>
+  <dialog class="p-dialog" id="pursuit-dialog" aria-labelledby="pursuit-dialog-title"></dialog>
+</body>
+</html>

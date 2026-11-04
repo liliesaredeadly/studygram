@@ -7,6 +7,31 @@ function sampleContent() {
   return vm.runInNewContext(readFileSync("js/sample-study.js", "utf8") + "\nKMAP_SAMPLE.content");
 }
 
+test("Meta errors distinguish a rejected key, billing, and Windows certificate trust", async t => {
+  const { generateText } = require("../server/model");
+  const originalKey = process.env.MODEL_API_KEY;
+  const originalMode = process.env.STUDYGRAM_ADULT_DEMO;
+  t.after(() => {
+    if (originalKey === undefined) delete process.env.MODEL_API_KEY;
+    else process.env.MODEL_API_KEY = originalKey;
+    if (originalMode === undefined) delete process.env.STUDYGRAM_ADULT_DEMO;
+    else process.env.STUDYGRAM_ADULT_DEMO = originalMode;
+  });
+  process.env.MODEL_API_KEY = "test-only-key";
+  process.env.STUDYGRAM_ADULT_DEMO = "1";
+  let status = 401;
+  t.mock.method(globalThis, "fetch", async () => {
+    if (status) return new Response(null, { status });
+    throw new TypeError("fetch failed", { cause: { code: "UNABLE_TO_VERIFY_LEAF_SIGNATURE" } });
+  });
+  const input = { instructions: "Generate a lesson", input: { name: "K-maps" } };
+  await assert.rejects(generateText(input), /rejected.*key/i);
+  status = 402;
+  await assert.rejects(generateText(input), /billing/i);
+  status = 0;
+  await assert.rejects(generateText(input), /trusted certificates/i);
+});
+
 test("Meta requests require demo mode and send the key only in the server header", async t => {
   const { generateText } = require("../server/model");
   const original = Object.fromEntries(
@@ -31,9 +56,13 @@ test("Meta requests require demo mode and send the key only in the server header
     return new Response(JSON.stringify({ choices: [{ message: { content: "test reply" } }] }));
   });
   const input = { instructions: "Generate a lesson", input: { name: "K-maps" } };
-  await assert.rejects(generateText(input), error => error.status === 503);
+  await assert.rejects(generateText(input), { status: 503, message: /turned off on this server/i });
   assert.equal(fetchMock.mock.callCount(), 0);
   process.env.STUDYGRAM_ADULT_DEMO = "1";
+  delete process.env.MODEL_API_KEY;
+  await assert.rejects(generateText(input), { status: 503, message: /needs a Meta API key/i });
+  assert.equal(fetchMock.mock.callCount(), 0);
+  process.env.MODEL_API_KEY = "test-only-key";
   assert.equal(await generateText(input), "test reply");
 });
 
@@ -55,6 +84,7 @@ test("a topic opened directly gets a study-set ID and reuses its generated quiz"
   const context = vm.createContext({
     window: { location: { protocol: "http:" } },
     fetch: async () => new Response(JSON.stringify(sampleContent())),
+    AbortSignal,
     Storage: { saveStudySet: topic => ({ ...topic, id: 77 }) },
   });
   vm.runInContext(readFileSync("js/ai.js", "utf8"), context);
@@ -99,6 +129,12 @@ test("server serves the student pages and validates the three AI flows", async t
     if (input.name === "Malformed") return "{";
     if (input.name === "Incomplete") return JSON.stringify({ scenes: [], questions: [] });
     if (input.name === "Timeout") throw new DOMException("Timeout", "TimeoutError");
+    if (input.name === "Duplicate Answers") {
+      const set = sampleContent();
+      const options = set.questions[0].options;
+      options[1] = `  ${options[0]} `;
+      return JSON.stringify(set);
+    }
     if (input.name) return JSON.stringify(sampleContent());
     if (input.message) return JSON.stringify({
       reply: "Okay, where did it get messy?",
@@ -124,7 +160,21 @@ test("server serves the student pages and validates the three AI flows", async t
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  assert.match(await (await fetch(base)).text(), /New Study Set/);
+  const focusPage = await fetch(base + "/pages/focus.html");
+  assert.equal(focusPage.status, 200);
+  const focusMarkup = await focusPage.text();
+  assert.match(focusMarkup, /<h2\b[^>]*>Focus Sprint<\/h2>/);
+  assert.match(focusMarkup, /<h2\b[^>]*>Quick Play<\/h2>/);
+  const focusHead = await fetch(base + "/pages/focus.html", { method: "HEAD" });
+  assert.equal(focusHead.status, 200);
+  assert.equal(focusHead.headers.get("content-type"), focusPage.headers.get("content-type"));
+  assert.equal(Number(focusHead.headers.get("content-length")), Buffer.byteLength(focusMarkup));
+  assert.equal(await focusHead.text(), "");
+  const home = await (await fetch(base)).text();
+  assert.match(home, /New Study Set/);
+  assert.match(home, /href="pages\/focus\.html"/);
+  const lesson = await (await fetch(base + "/pages/lesson.html")).text();
+  assert.match(lesson, /id="lesson-focus-link"[^>]*href="focus\.html"/);
   assert.match(await (await fetch(base + "/pages/study.html")).text(), /study-file/);
   for (const path of ["/pages/teacher.html", "/js/gemini.js", "/server/model.js", "/.env"]) {
     assert.equal((await fetch(base + path)).status, 404);
@@ -132,10 +182,14 @@ test("server serves the student pages and validates the three AI flows", async t
   const request = { name: "K-maps", sourceText: "First and last columns touch.", focus: "wraparound" };
   const generated = await post("study-set", request);
   assert.equal(generated.status, 200);
-  assert.equal((await generated.json()).questions.length, 6);
+  const generatedSet = await generated.json();
+  assert.equal(generatedSet.questions.length, 6);
+  assert.equal(generatedSet.storyboard.version, 1);
+  assert.equal(generatedSet.storyboard.scenes[0].beats[0].narration, generatedSet.scenes[0].narration);
   assert.deepEqual(received[0], request);
   assert.equal((await post("study-set", { name: "Malformed" })).status, 502);
   assert.equal((await post("study-set", { name: "Incomplete" })).status, 502);
+  assert.equal((await post("study-set", { name: "Duplicate Answers" })).status, 502);
   assert.equal((await post("study-set", { name: "Timeout" })).status, 504);
   assert.equal((await post("study-set", { name: "" })).status, 400);
   assert.equal((await post("study-set", { name: "Long", sourceText: "a".repeat(150000) })).status, 413);
@@ -162,11 +216,10 @@ test("typed Lily saves a check-in with consent and resumes a queued request", as
   const context = vm.createContext({
     window: { location: { assign: url => { destination = url; } } },
     document: { getElementById: id => nodes[id] },
-    Storage: { getStudentProfile: () => null },
-    localStorage: {
-      getItem: key => notes.get(key),
-      setItem: (key, value) => notes.set(key, value),
-      removeItem: key => notes.delete(key),
+    Storage: {
+      getPrivateValue: key => notes.get(key),
+      setPrivateValue: (key, value) => value === null ? notes.delete(key) : notes.set(key, value),
+      flush: async () => {},
     },
     Date: class { toDateString() { return day; } },
     clearTimeout,

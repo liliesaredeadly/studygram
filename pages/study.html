@@ -4,47 +4,75 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>New Study Set · Studygram</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
   <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../academy.css">
 </head>
-<body>
+<body inert class="academy">
   <div id="toast-container"></div>
-  <nav class="navbar" aria-label="Main navigation">
-    <a class="navbar-brand" href="../index.html"><span class="logo-icon">📚</span><span class="gradient-text">Studygram</span></a>
+  <nav class="navbar world-navigation" aria-label="Main navigation">
+    <a class="navbar-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+      <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+      <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
+    </a>
     <div class="navbar-links">
       <a href="../index.html" aria-label="Home">🏠 <span>Home</span></a>
       <a href="lesson.html" aria-label="Learn">▶️ <span>Learn</span></a>
       <a href="quiz.html" aria-label="Quiz">🧠 <span>Quiz</span></a>
       <a href="diary.html" aria-label="Diary">📖 <span>Diary</span></a>
+      <a href="explore.html" aria-label="Explore the World">🧭 <span>Explore</span></a>
       <a href="study.html" class="active" aria-current="page" aria-label="New Study Set">＋ <span>New Set</span></a>
     </div>
   </nav>
-  <main class="container study-builder">
-    <header>
-      <p class="hero-badge">Your study material</p>
-      <h1>New study set</h1>
-      <p class="subtitle">Bring a topic and any notes you have. Get a short reel and a quiz you can come back to.</p>
+  <main class="container academy-shell">
+    <header class="academy-mast">
+      <div>
+        <p class="academy-kicker">Studygram / Academy</p>
+        <h1>New study set</h1>
+        <p>Bring a topic and any notes you have. Get a short reel and a quiz you can come back to.</p>
+        <a class="study-reels-jump" id="student-reels" href="../index.html#student-reels">Browse Reels <span aria-hidden="true">↗</span></a>
+      </div>
+      <span class="academy-mast-mark" id="academy-illustration" aria-hidden="true"></span>
     </header>
-    <form id="study-form" class="card study-form">
-      <label class="form-label" for="study-topic">Topic</label>
-      <input class="form-input" id="study-topic" name="topic" maxlength="120" required placeholder="e.g. K-map wraparound">
-      <label class="form-label" for="study-notes">Study material <small>(optional)</small></label>
-      <textarea class="form-textarea" id="study-notes" name="notes" maxlength="20000" rows="7" placeholder="Paste class notes, a summary, or the example that threw you."></textarea>
-      <div class="study-actions" id="study-saved-source" hidden>
-        <label class="form-label" for="study-source-picker">Add notes from a saved set</label>
-        <select class="form-input" id="study-source-picker"></select>
-        <button class="btn btn-ghost btn-sm" type="button" id="study-add-notes">Add notes</button>
+    <div class="academy-workspace">
+      <nav class="academy-dock" aria-label="Academy workspace">
+        <p class="academy-dock-label" aria-hidden="true">Workspace</p>
+        <a href="study.html" aria-current="page"><span aria-hidden="true" class="academy-dock-icon academy-dock-create"></span>Create</a>
+        <a href="lesson.html"><span aria-hidden="true" class="academy-dock-icon academy-dock-learn"></span>Learn</a>
+        <a href="quiz.html"><span aria-hidden="true" class="academy-dock-icon academy-dock-practice"></span>Practice</a>
+      </nav>
+      <div class="academy-window">
+        <div class="academy-window-bar" aria-hidden="true"><span>Study set builder</span></div>
+        <form id="study-form" class="study-form academy-window-body" method="post">
+          <label class="form-label" for="study-topic">Topic</label>
+          <input class="form-input" id="study-topic" name="topic" maxlength="120" required placeholder="e.g. K-map wraparound">
+          <label class="form-label" for="study-notes">Study material <small>(optional)</small></label>
+          <textarea class="form-textarea" id="study-notes" name="notes" maxlength="20000" rows="7" placeholder="Paste class notes, a summary, or the example that threw you."></textarea>
+          <div class="study-actions" id="study-saved-source" hidden>
+            <label class="form-label" for="study-source-picker">Add notes from a saved set</label>
+            <select class="form-input" id="study-source-picker"></select>
+            <button class="btn btn-ghost btn-sm" type="button" id="study-add-notes">Add notes</button>
+          </div>
+          <label class="form-label" for="study-file">Add notes from a file</label>
+          <input id="study-file" class="form-input" type="file" accept=".txt,.pdf,text/plain,application/pdf" aria-describedby="study-file-help">
+          <p id="study-file-help">TXT or a PDF with selectable text, up to 5 MB. Review the notes before creating your set. Live generation sends the text to Meta AI.</p>
+          <p id="study-focus" hidden></p>
+          <p id="study-status" role="status"></p>
+          <div class="study-actions">
+            <button class="btn btn-primary" type="submit" id="study-create">Create reel + quiz</button>
+            <button class="btn btn-ghost" type="button" id="study-sample">Try the K-map sample</button>
+          </div>
+        </form>
       </div>
-      <label class="form-label" for="study-file">Add notes from a file</label>
-      <input id="study-file" class="form-input" type="file" accept=".txt,.pdf,text/plain,application/pdf" aria-describedby="study-file-help">
-      <p id="study-file-help">TXT or a PDF with selectable text, up to 5 MB. Review the notes before creating your set. Live generation sends the text to Meta AI.</p>
-      <p id="study-focus" hidden></p>
-      <p id="study-status" role="status"></p>
-      <div class="study-actions">
-        <button class="btn btn-primary" type="submit" id="study-create">Create reel + quiz</button>
-        <button class="btn btn-ghost" type="button" id="study-sample">Try the K-map sample</button>
-      </div>
-    </form>
+    </div>
   </main>
+  <script src="../js/indie-pixels.js"></script>
+  <script>
+    if (typeof IndiePixel === 'function') {
+      document.getElementById('academy-illustration').innerHTML = IndiePixel('hero');
+    }
+  </script>
+  <script src="../js/private-session.js"></script>
   <script src="../js/storage.js"></script>
   <script src="../js/app.js"></script>
   <script src="../js/ai.js"></script>

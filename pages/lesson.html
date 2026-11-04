@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Lesson — Studygram</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
   <meta name="description" content="Watch a short narrated reel from your study material." />
   <link rel="stylesheet" href="../style.css" />
   <style>
@@ -126,49 +127,113 @@
       margin-bottom: 16px;
     }
 
+    .reel-video-panel {
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .reel-video-panel [hidden] { display: none; }
+    .reel-video-panel video {
+      display: block;
+      width: min(100%, 360px);
+      aspect-ratio: 9 / 16;
+      margin: 16px auto;
+      background: #15131d;
+      border-radius: var(--radius-md);
+    }
+    .reel-video-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
     @media (max-width: 640px) {
       .slide-card { padding: 28px 20px; min-height: 280px; }
       .slide-title { font-size: 1.3rem; }
     }
   </style>
+  <link rel="stylesheet" href="../academy.css" />
 </head>
-<body>
+<body inert class="academy">
 
 <div id="toast-container"></div>
 
 <!-- NAVBAR -->
-<nav class="navbar">
-  <a class="navbar-brand" href="../index.html">
-    <div class="logo-icon">📚</div>
-    <span class="gradient-text">Studygram</span>
+<nav class="navbar world-navigation" aria-label="Main navigation">
+  <a class="navbar-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+    <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+    <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
   </a>
   <div class="navbar-links">
     <a href="../index.html" aria-label="Home">🏠 <span>Home</span></a>
     <a href="lesson.html" class="active" aria-label="Learn">▶️ <span>Learn</span></a>
     <a href="quiz.html" aria-label="Quiz">🧠 <span>Quiz</span></a>
     <a href="diary.html" aria-label="Diary">📖 <span>Diary</span></a>
+    <a href="explore.html" aria-label="Explore the World">🧭 <span>Explore</span></a>
     <a href="study.html" aria-label="New Study Set">＋ <span>New Set</span></a>
   </div>
 </nav>
 
-<div class="page-wrapper">
-<div class="container" style="padding-top:32px; padding-bottom:64px; max-width:700px;">
+<main class="container academy-shell">
+  <header class="academy-mast">
+    <div>
+      <p class="academy-kicker">Studygram / Academy</p>
+      <p class="academy-title">Lesson library</p>
+      <p>Open a study set and work through it at your own pace.</p>
+    </div>
+    <span class="academy-mast-mark" aria-hidden="true"></span>
+  </header>
+  <div class="academy-workspace">
+    <nav class="academy-dock" aria-label="Academy workspace">
+      <p class="academy-dock-label" aria-hidden="true">Workspace</p>
+      <a href="study.html"><span aria-hidden="true" class="academy-dock-icon academy-dock-create"></span>Create</a>
+      <a href="lesson.html" aria-current="page"><span aria-hidden="true" class="academy-dock-icon academy-dock-learn"></span>Learn</a>
+      <a href="quiz.html"><span aria-hidden="true" class="academy-dock-icon academy-dock-practice"></span>Practice</a>
+    </nav>
+    <div class="academy-window">
+      <div class="academy-window-bar" aria-hidden="true"><span>Reel player</span></div>
+      <div class="academy-window-body">
 
   <!-- TOPIC HEADER (shown after topic picked) -->
   <div id="lesson-header" style="display:none; margin-bottom:24px;" class="animate-slide-down">
     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
       <div>
         <p class="slide-number" id="slide-number-label"></p>
-        <h1 id="lesson-topic-name" style="font-size:1.4rem;"></h1>
+        <h1 id="lesson-topic-name"></h1>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="resetLesson()">↩ Change Topic</button>
+      <div class="study-actions">
+        <a id="lesson-growth-link" href="growth.html#growth-recall" class="btn btn-ghost btn-sm" hidden>Explain It Yourself</a>
+        <a id="lesson-explore-link" class="btn btn-ghost btn-sm" href="explore.html" hidden>← Back to Explore</a>
+        <a id="lesson-focus-link" href="focus.html" class="btn btn-ghost btn-sm">Focus &amp; Fun</a>
+        <button class="btn btn-ghost btn-sm" id="lesson-reset" type="button">↩ Change Topic</button>
+      </div>
     </div>
 
     <!-- Progress bar -->
-    <div class="progress-bar-wrapper" style="margin-top:14px;">
+    <div class="progress-bar-wrapper" id="lesson-scene-progress" style="margin-top:14px;">
       <div class="progress-bar-fill" id="lesson-progress" style="width:20%;"></div>
     </div>
   </div>
+
+  <section class="card reel-video-panel" id="reel-video-panel" aria-label="Narrated reel" hidden>
+    <p id="reel-video-status" role="status"></p>
+    <p id="reel-video-details" style="color:var(--text-secondary); font-size:.85rem;"></p>
+    <video id="reel-video" aria-label="Narrated study reel" controls playsinline preload="metadata" hidden></video>
+    <div class="reel-video-actions">
+      <a id="reel-download" class="btn btn-ghost btn-sm" download hidden>Download MP4</a>
+      <button id="lesson-reel-share" class="btn btn-ghost btn-sm" type="button" hidden>Share to Student reels</button>
+      <button id="reel-retry" class="btn btn-ghost btn-sm" type="button" hidden>Render again</button>
+      <a id="reel-sign-in" class="btn btn-ghost btn-sm" href="login.html" hidden>Sign in to render</a>
+      <a id="reel-quiz" class="btn btn-primary btn-sm">Take Quiz</a>
+      <button id="reel-preview" class="btn btn-ghost btn-sm" type="button" aria-expanded="false" aria-controls="lesson-content">Storyboard preview</button>
+    </div>
+    <div class="reel-share-panel" id="lesson-reel-shared" hidden>
+      <p role="status">Shared to Student reels.</p>
+      <a href="../index.html#student-reels">Browse Reels</a>
+    </div>
+  </section>
 
   <!-- MAIN CONTENT AREA -->
   <div id="lesson-content"></div>
@@ -176,12 +241,31 @@
   <!-- SLIDE DOTS (shown during lesson) -->
   <div class="slide-dots" id="slide-dots" style="display:none;"></div>
 
-</div>
-</div>
+      </div>
+    </div>
+  </div>
+<dialog class="reel-share-dialog" id="reel-share-dialog" aria-labelledby="reel-share-title">
+  <form id="reel-share-form" method="post">
+    <h2 id="reel-share-title">Share your study reel</h2>
+    <p>Community members can watch the finished video and give you a point by liking it. Check the video and title for personal details before sharing.</p>
+    <p>Your original notes, prompts, and uploaded files stay private.</p>
+    <label class="form-label" for="reel-share-name">Title in the feed</label>
+    <input id="reel-share-name" name="title" class="form-input" maxlength="120" required>
+    <p id="reel-share-status" role="status"></p>
+    <a id="reel-share-sign-in" href="login.html" hidden>Sign in to Studygram</a>
+    <div class="reel-share-actions">
+      <button id="reel-share-cancel" class="btn btn-ghost btn-sm" type="button">Cancel</button>
+      <button id="reel-share-submit" class="btn btn-primary btn-sm" type="submit">Publish reel</button>
+    </div>
+  </form>
+</dialog>
+</main>
 
+<script src="../js/private-session.js"></script>
 <script src="../js/storage.js"></script>
 <script src="../js/ai.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/reel-video.js"></script>
 <script src="../js/lesson.js"></script>
 </body>
 </html>

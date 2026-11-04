@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Take a quiet pause with a guided, illustrated reflection from Studygram." />
+  <title>Cinematic Wisdom · Studygram</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="../wisdom.css" />
+  <script defer src="../js/private-session.js"></script>
+  <script defer src="../js/storage.js"></script>
+  <script defer src="../js/app.js"></script>
+  <script defer src="../js/wisdom-scenes.js"></script>
+  <script defer src="../js/wisdom.js"></script>
+</head>
+<body class="wisdom-page">
+  <a class="wisdom-skip" href="#wisdom-content">Skip to reflection</a>
+  <nav class="navbar world-navigation" aria-label="Studygram">
+    <a class="navbar-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+      <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+      <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
+    </a>
+    <div class="navbar-links">
+      <a href="lesson.html">Learn</a>
+      <a href="quiz.html">Quiz</a>
+      <a href="diary.html">Diary</a>
+      <a href="explore.html">Explore</a>
+      <a href="study.html">New Study Set</a>
+    </div>
+  </nav>
+  <header class="wisdom-masthead">
+    <div class="container wisdom-masthead-inner">
+      <p class="wisdom-kicker">Mindset <span aria-hidden="true">/</span> The screening room</p>
+      <button class="btn btn-ghost wisdom-reset" id="wisdom-reset" type="button" disabled>Start over</button>
+    </div>
+  </header>
+
+  <main class="container wisdom-main" id="wisdom-content" tabindex="-1">
+    <div class="wisdom-layout">
+      <div class="wisdom-intro">
+        <div class="wisdom-kicker"><span aria-hidden="true">✦</span> A Studygram reflection <span class="wisdom-demo">Local demo</span></div>
+        <h1>Cinematic <em>Wisdom</em></h1>
+        <p class="wisdom-lede">A quiet place to put a hard moment into words. Take a breath, tell us what happened, and explore an illustrated reflection at your own pace.</p>
+      </div>
+
+      <section class="wisdom-composer" id="wisdom-composer" aria-labelledby="wisdom-form-title">
+        <form id="wisdom-form" autocomplete="off" novalidate>
+          <h2 id="wisdom-form-title">What’s weighing on you?</h2>
+          <label class="form-label" for="wisdom-message">Your reflection</label>
+          <textarea class="form-textarea" id="wisdom-message" maxlength="1000" rows="3" autocomplete="off" spellcheck="false" required disabled style="resize: none" aria-describedby="wisdom-hint wisdom-error" placeholder="Start with what happened, or how it left you feeling."></textarea>
+          <p class="wisdom-hint" id="wisdom-hint">Try a sample situation or write a few sentences. Leave out names and identifying details.</p>
+          <p class="wisdom-error" id="wisdom-error" role="alert" tabindex="-1" hidden></p>
+          <div class="wisdom-form-actions">
+            <button class="btn btn-primary wisdom-submit" id="wisdom-submit" type="submit" disabled>Continue <span aria-hidden="true">→</span></button>
+            <p class="wisdom-status" id="wisdom-status" role="status"></p>
+          </div>
+        </form>
+
+        <div class="wisdom-examples" id="wisdom-examples">
+          <p class="wisdom-eyebrow">Try a sample</p>
+          <ul aria-label="Sample situations">
+            <li><button class="btn btn-ghost" type="button" data-example="I studied for my exam and still did badly. I keep thinking I should have done more." disabled>An exam setback</button></li>
+            <li><button class="btn btn-ghost" type="button" data-example="I said something hurtful to a friend and feel guilty. I want to apologize but I’m scared I’ll make it worse." disabled>A hard apology</button></li>
+            <li><button class="btn btn-ghost" type="button" data-example="I feel overwhelmed by schoolwork and I don’t know where to start. I’d like a non-religious reflection." disabled>An overwhelming day</button></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="wisdom-response" id="wisdom-response" aria-label="Guided reflection">
+        <div class="wisdom-film" id="wisdom-film">
+          <div class="wisdom-film-header" aria-hidden="true"><span>Cinematic Wisdom</span><span class="wisdom-film-mark">✦</span></div>
+          <div class="wisdom-viewport">
+            <div class="wisdom-illustration" id="wisdom-art" aria-hidden="true"></div>
+            <div class="wisdom-film-caption" aria-hidden="true">
+              <span class="wisdom-eyebrow" id="wisdom-film-label">An illustrated reflection</span>
+              <span class="wisdom-film-title" id="wisdom-film-title">A moment<br />to pause.</span>
+            </div>
+          </div>
+          <div class="wisdom-film-footer"><span id="wisdom-film-footer">Still frame · shoreline at dusk</span><span aria-hidden="true">◆</span></div>
+        </div>
+
+        <div class="wisdom-reply" id="wisdom-reply" hidden>
+          <h2 id="wisdom-reply-title" tabindex="-1"></h2>
+          <p id="wisdom-reply-text"></p>
+          <fieldset class="wisdom-traditions" id="wisdom-traditions" hidden>
+            <legend class="wisdom-eyebrow">Choose a source for this reflection</legend>
+            <div class="wisdom-choice-grid">
+              <button class="btn btn-secondary" type="button" data-tradition="gita" disabled>Bhagavad Gita</button>
+              <button class="btn btn-secondary" type="button" data-tradition="bible" disabled>Bible</button>
+              <button class="btn btn-secondary" type="button" data-tradition="either" disabled>Either tradition</button>
+              <button class="btn btn-secondary" type="button" data-tradition="secular" disabled>Non-religious</button>
+            </div>
+          </fieldset>
+        </div>
+
+        <article class="wisdom-card" id="wisdom-card" hidden aria-labelledby="wisdom-card-title">
+          <div class="wisdom-chapter">
+            <span class="wisdom-eyebrow" id="wisdom-card-label"></span>
+            <span class="wisdom-count" id="wisdom-card-count" role="status"></span>
+          </div>
+          <h2 id="wisdom-card-title" tabindex="-1"></h2>
+          <p class="wisdom-card-text" id="wisdom-card-text"></p>
+          <figure class="wisdom-source" id="wisdom-source" hidden>
+            <blockquote id="wisdom-quote"></blockquote>
+            <p class="wisdom-original" id="wisdom-original" lang="sa" hidden></p>
+            <figcaption><a id="wisdom-source-link" target="_blank" rel="noopener noreferrer"></a><span id="wisdom-edition"></span></figcaption>
+            <a id="wisdom-growth-link" href="growth.html#growth-recall" hidden>Explain It Yourself</a>
+          </figure>
+          <div class="wisdom-card-actions" role="group" aria-label="Reflection card controls">
+            <button class="btn btn-ghost" id="wisdom-previous" type="button" disabled><span aria-hidden="true">←</span> Previous</button>
+            <button class="btn btn-primary" id="wisdom-next" type="button" disabled>Next <span aria-hidden="true">→</span></button>
+          </div>
+          <div class="wisdom-audio">
+            <button class="btn btn-ghost" id="wisdom-narration" type="button" aria-describedby="wisdom-audio-status" disabled>Read aloud</button>
+            <p id="wisdom-audio-status" role="status">Checking for an on-device voice.</p>
+          </div>
+        </article>
+      </section>
+    </div>
+
+    <footer class="wisdom-notice">
+      <p><span aria-hidden="true">✦</span> This demo is for reflection. If you need support, reach out to a trusted person or a qualified professional.</p>
+      <details id="wisdom-urgent-help">
+        <summary>Need urgent help?</summary>
+        <p>If you’re in immediate danger, call your local emergency services and tell a trusted person nearby.</p>
+      </details>
+    </footer>
+    <noscript><p>Cinematic Wisdom needs JavaScript. Enable it to try a sample reflection.</p></noscript>
+  </main>
+</body>
+</html>

@@ -12,7 +12,12 @@ let topicData = null; // Topic object
 const LETTERS = ["A", "B", "C", "D"];
 
 // ---- Entry Point ----
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof StudygramPrivateSession !== "undefined") {
+    await StudygramPrivateSession.ready;
+    if (!StudygramPrivateSession.user()) return;
+  }
+  document.getElementById("quiz-reset").addEventListener("click", resetQuiz);
   const params  = new URLSearchParams(window.location.search);
   const topicId = params.get("topicId");
   const topicName = params.get("topic"); // Custom topic (no ID)
@@ -47,7 +52,7 @@ function showTopicPicker() {
           <p class="form-label" style="text-align:center;margin-bottom:12px;">📌 Your Topics</p>
           <div class="topic-chips" style="justify-content:center;">
             ${savedTopics.map(t => `
-              <a class="topic-chip" href="quiz.html?topicId=${t.id}">${escapeHTML(t.name)}</a>
+              <a class="topic-chip" href="quiz.html?topicId=${encodeURIComponent(t.id)}">${escapeHTML(t.name)}</a>
             `).join("")}
           </div>
         </div>
@@ -55,18 +60,24 @@ function showTopicPicker() {
       ` : ""}
 
       <p class="form-label" style="text-align:center;margin-bottom:12px;">✍️ Or type any topic</p>
-      <div style="display:flex;gap:10px;max-width:420px;margin:0 auto;">
+      <form id="quiz-topic-form" style="display:flex;gap:10px;max-width:420px;margin:0 auto;">
         <input
           class="form-input"
           type="text"
           id="custom-q-input"
           placeholder="e.g., The French Revolution..."
           style="flex:1;"
-          onkeydown="if(event.key==='Enter') startCustomQuiz()"
+          aria-label="Quiz topic"
+          maxlength="120"
+          required
         />
-        <button class="btn btn-primary" onclick="startCustomQuiz()">Start</button>
-      </div>
+        <button class="btn btn-primary" type="submit">Start</button>
+      </form>
     </div>`;
+  document.getElementById("quiz-topic-form").addEventListener("submit", event => {
+    event.preventDefault();
+    startCustomQuiz();
+  });
 }
 
 function startCustomQuiz() {
@@ -87,6 +98,8 @@ async function startQuiz(topic) {
   // Show header
   document.getElementById("quiz-header").style.display = "block";
   document.getElementById("quiz-topic-name").textContent = topic.name;
+  document.getElementById("q-label").textContent = "PREPARING QUIZ";
+  setExploreReturnLink("quiz-explore-link", topic.exploreCategory);
   updateProgress(0);
 
   const content = document.getElementById("quiz-content");
@@ -100,8 +113,8 @@ async function startQuiz(topic) {
   try {
     const result = await loadStudyContent(topic);
     if (topicData !== topic) return;
-    questions = result.questions;
-    if (!Array.isArray(questions) || questions.length === 0) throw new Error("No questions generated");
+    if (!Array.isArray(result.questions) || result.questions.length === 0) throw new Error("No questions generated");
+    questions = mixQuizOptions(result.questions);
     renderQuestion(nextQuizIndex(questions, attempts));
   } catch (err) {
     if (topicData === topic) handleAPIError(err, content, () => startQuiz(topic));
@@ -117,8 +130,8 @@ function renderQuestion(index) {
 
   updateProgress(attempts.size);
 
-  const diff = q.difficulty?.toLowerCase() || "easy";
-  const diffIcon  = { easy: "🟢", medium: "🟡", hard: "🔴" }[diff] || "🔵";
+  const diff = quizDifficulty(q);
+  const diffIcon = { easy: "🟢", medium: "🟡", hard: "🔴" }[diff];
   const diffClass = `diff-${diff}`;
   const total = questions.length;
 
@@ -129,7 +142,7 @@ function renderQuestion(index) {
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <span class="difficulty-badge ${diffClass}">${diffIcon} ${diff.toUpperCase()}</span>
-        <span style="font-size:0.85rem;color:var(--text-muted);">Score: ${score}/${attempts.size}</span>
+        <span id="quiz-score" style="font-size:0.85rem;color:var(--text-muted);">Score: ${score}/${attempts.size}</span>
       </div>
 
       <p class="question-text">${escapeHTML(q.question)}</p>
@@ -139,7 +152,6 @@ function renderQuestion(index) {
           <button
             class="quiz-option"
             id="opt-${index}-${i}"
-            onclick="selectAnswer(${index}, ${i})"
           >
             <span class="option-letter">${LETTERS[i]}</span>
             ${escapeHTML(opt)}
@@ -154,13 +166,16 @@ function renderQuestion(index) {
           class="btn btn-primary"
           id="next-btn"
           style="display:none;"
-          onclick="advanceQuiz()"
         >
           ${attempts.size < total - 1 ? "Next Question →" : "🏁 See Results"}
         </button>
       </div>
 
     </div>`;
+  q.options.forEach((_, i) => {
+    document.getElementById(`opt-${index}-${i}`).addEventListener("click", () => selectAnswer(index, i));
+  });
+  document.getElementById("next-btn").addEventListener("click", advanceQuiz);
 }
 
 // ---- Handle Answer Selection ----
@@ -171,7 +186,9 @@ function selectAnswer(qIndex, selectedIdx) {
   const q = questions[qIndex];
   const isCorrect = selectedIdx === q.correctIndex;
   attempts.set(qIndex, isCorrect);
+  updateProgress(attempts.size);
   if (isCorrect) score++;
+  document.getElementById("quiz-score").textContent = `Score: ${score}/${attempts.size}`;
 
   // Style all options
   q.options.forEach((_, i) => {
@@ -205,8 +222,8 @@ function advanceQuiz() {
 }
 
 // ---- Update Progress Bar ----
-function updateProgress(index) {
-  const pct = ((index + 1) / (questions.length || 9)) * 100;
+function updateProgress(completed) {
+  const pct = questions.length ? (completed / questions.length) * 100 : 0;
   const bar = document.getElementById("quiz-progress");
   if (bar) bar.style.width = pct + "%";
 }
@@ -226,13 +243,17 @@ function showResults() {
 
   // Save score
   if (topicData?.id) {
-    Storage.saveQuizScore({
-      topicId: topicData.id,
-      topicName: topicData.name,
-      correct: score,
-      total,
-      percentage: pct
-    });
+    try {
+      Storage.saveQuizScore({
+        topicId: topicData.id,
+        topicName: topicData.name,
+        correct: score,
+        total,
+        percentage: pct
+      });
+    } catch {
+      showToast("Your score couldn’t be saved on this device.", "warning");
+    }
   }
 
   document.getElementById("quiz-content").innerHTML = `
@@ -248,21 +269,23 @@ function showResults() {
 
       <div class="result-grid">
         ${QUIZ_LEVELS.map(level => {
-          const entries = [...attempts].filter(([index]) => questions[index].difficulty === level);
+          const entries = [...attempts].filter(([index]) => quizDifficulty(questions[index]) === level);
           const correct = entries.filter(([, isCorrect]) => isCorrect).length;
           return `<div class="result-stat"><span class="val">${correct}/${entries.length}</span><span class="lbl">${level}</span></div>`;
         }).join("")}
       </div>
 
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
-        <button class="btn btn-primary btn-lg" onclick="startQuiz(topicData)">🔄 Try Again</button>
-        <button class="btn btn-ghost btn-lg" onclick="resetQuiz()">📚 New Topic</button>
+        <button class="btn btn-primary btn-lg" id="quiz-retry" type="button">🔄 Try Again</button>
+        <button class="btn btn-ghost btn-lg" id="quiz-new-topic" type="button">📚 New Topic</button>
         ${topicData?.id
-          ? `<a href="lesson.html?topicId=${topicData.id}" class="btn btn-ghost btn-lg">▶ Review Lesson</a>`
+          ? `<a href="lesson.html?topicId=${encodeURIComponent(topicData.id)}" class="btn btn-ghost btn-lg">▶ Review Lesson</a>`
           : `<a href="lesson.html" class="btn btn-ghost btn-lg">▶ New Lesson</a>`
         }
       </div>
     </div>`;
+  document.getElementById("quiz-retry").addEventListener("click", () => startQuiz(topicData));
+  document.getElementById("quiz-new-topic").addEventListener("click", resetQuiz);
 }
 
 function getGrade(pct) {

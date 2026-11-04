@@ -13,7 +13,11 @@ let sceneStartedAt = 0;
 
 // ---- Entry Point ----
 // Runs when the page fully loads
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof StudygramPrivateSession !== "undefined") {
+    await StudygramPrivateSession.ready;
+    if (!StudygramPrivateSession.user()) return;
+  }
   // Check if a topicId was passed in the URL (e.g. lesson.html?topicId=123)
   const params = new URLSearchParams(window.location.search);
   const topicId = params.get("topicId");
@@ -45,6 +49,7 @@ function showTopicPicker() {
 
   const savedTopics = Storage.getTopics();
   const content = document.getElementById("lesson-content");
+  content.hidden = false;
 
   content.innerHTML = `
     <div class="topic-picker animate-slide-up">
@@ -59,7 +64,7 @@ function showTopicPicker() {
           <p class="form-label" style="text-align:center; margin-bottom:12px;">📌 My Study Sets</p>
           <div class="topic-chips" style="justify-content:center;">
             ${savedTopics.map(t => `
-              <a class="topic-chip" href="lesson.html?topicId=${t.id}">${escapeHTML(t.name)}</a>
+              <a class="topic-chip" href="lesson.html?topicId=${encodeURIComponent(t.id)}">${escapeHTML(t.name)}</a>
             `).join("")}
           </div>
         </div>
@@ -73,6 +78,7 @@ function showTopicPicker() {
 
 // ---- Start Lesson ----
 async function startLesson(topic) {
+  ReelVideo.clear();
   pauseReel();
   slides = [];
   topicData = topic;
@@ -82,9 +88,16 @@ async function startLesson(topic) {
   const header = document.getElementById("lesson-header");
   header.style.display = "block";
   document.getElementById("lesson-topic-name").textContent = topic.name;
+  setExploreReturnLink("lesson-explore-link", topic.exploreCategory);
+  const focusLink = document.getElementById("lesson-focus-link");
+  const growthLink = document.getElementById("lesson-growth-link");
+  growthLink.hidden = true;
+  const focusHref = () => topic.id ? `focus.html?topicId=${encodeURIComponent(topic.id)}` : "focus.html";
+  focusLink.href = focusHref();
 
   // Show loading state
   const content = document.getElementById("lesson-content");
+  content.hidden = false;
   content.innerHTML = `
     <div class="loading-overlay" style="min-height:320px; border-radius:var(--radius-xl); border:1px solid var(--border); background:var(--bg-card);">
       <div class="spinner"></div>
@@ -93,16 +106,39 @@ async function startLesson(topic) {
     </div>`;
 
   try {
-    const { scenes } = await loadStudyContent(topic);
+    const studyContent = await loadStudyContent(topic);
     if (topicData !== topic) return;
-    slides = scenes;
+    focusLink.href = focusHref();
+    slides = studyContent.scenes;
     if (!Array.isArray(slides) || slides.length === 0) throw new Error("No slides generated");
+    if (topic.id) {
+      growthLink.href = `growth.html?topicId=${encodeURIComponent(topic.id)}#growth-recall`;
+      growthLink.hidden = false;
+    }
 
     renderDots();
     renderSlide(0);
+    ReelVideo.open(topic, studyContent, setLessonPreview);
 
   } catch (err) {
     if (topicData === topic) handleAPIError(err, content, () => startLesson(topic));
+  }
+}
+
+function setLessonPreview(visible) {
+  if (!visible) pauseReel();
+  document.getElementById("lesson-content").hidden = !visible;
+  document.getElementById("slide-dots").style.display = visible ? "flex" : "none";
+  document.getElementById("lesson-scene-progress").hidden = !visible;
+  document.getElementById("slide-number-label").hidden = !visible;
+}
+
+function recordLessonCompletion(topic) {
+  if (!topic?.id) return;
+  try {
+    Storage.markLessonComplete(topic.id);
+  } catch {
+    showToast("Your lesson progress couldn’t be saved on this device.", "warning");
   }
 }
 
@@ -131,16 +167,21 @@ function renderSlide(index) {
         <p class="reel-caption">${escapeHTML(scene.caption)}</p>
       </div>
       <div class="reel-controls">
-        <button class="btn btn-ghost btn-sm" onclick="goToSlide(${index - 1})" ${index === 0 ? "disabled" : ""}>Previous</button>
-        <button class="btn btn-primary btn-sm" id="reel-play" onclick="toggleReel()">Play</button>
+        <button class="btn btn-ghost btn-sm" id="reel-previous" ${index === 0 ? "disabled" : ""}>Previous</button>
+        <button class="btn btn-primary btn-sm" id="reel-play">Play</button>
         ${index === total - 1
-          ? '<button class="btn btn-ghost btn-sm" onclick="finishLesson()">Take Quiz</button>'
-          : `<button class="btn btn-ghost btn-sm" onclick="goToSlide(${index + 1})">Next</button>`}
+          ? '<button class="btn btn-ghost btn-sm" id="reel-close-preview">Close preview</button>'
+          : '<button class="btn btn-ghost btn-sm" id="reel-next">Next</button>'}
         ${window.speechSynthesis
-          ? `<button class="btn btn-ghost btn-sm" id="reel-narration" aria-pressed="${narrationEnabled}" onclick="toggleNarration()">Narration</button>`
+          ? `<button class="btn btn-ghost btn-sm" id="reel-narration" aria-pressed="${narrationEnabled}">Narration</button>`
           : ""}
       </div>
     </article>`;
+  document.getElementById("reel-previous").addEventListener("click", () => goToSlide(index - 1));
+  document.getElementById("reel-play").addEventListener("click", toggleReel);
+  document.getElementById("reel-close-preview")?.addEventListener("click", () => ReelVideo.hidePreview());
+  document.getElementById("reel-next")?.addEventListener("click", () => goToSlide(index + 1));
+  document.getElementById("reel-narration")?.addEventListener("click", toggleNarration);
 }
 
 function playReel() {
@@ -152,7 +193,9 @@ function playReel() {
 
   reelTimer = setTimeout(() => {
     if (currentSlide === slides.length - 1) {
-      finishLesson();
+      pauseReel();
+      sceneTimeRemaining = slides[currentSlide].duration * 1000;
+      recordLessonCompletion(topicData);
     } else {
       goToSlide(currentSlide + 1);
     }
@@ -203,8 +246,11 @@ function renderDots() {
   const dotsEl = document.getElementById("slide-dots");
   dotsEl.style.display = "flex";
   dotsEl.innerHTML = slides.map((_, i) =>
-    `<button type="button" class="dot ${i === 0 ? "active" : ""}" onclick="goToSlide(${i})" aria-label="Scene ${i + 1}"></button>`
+    `<button type="button" class="dot ${i === 0 ? "active" : ""}" aria-label="Scene ${i + 1}"></button>`
   ).join("");
+  dotsEl.querySelectorAll("button").forEach((button, index) => {
+    button.addEventListener("click", () => goToSlide(index));
+  });
 }
 
 function updateDots(activeIndex) {
@@ -215,45 +261,21 @@ function updateDots(activeIndex) {
 
 // ---- Keyboard Navigation ----
 document.addEventListener("keydown", (e) => {
-  if (slides.length === 0 || !document.getElementById("reel-play") || e.target.closest("button, input, textarea, a")) return;
+  if (slides.length === 0 || document.getElementById("lesson-content").hidden
+    || !document.getElementById("reel-play") || e.target.closest("button, input, textarea, a")) return;
   if (e.key === "ArrowRight") goToSlide(currentSlide + 1);
   if (e.key === "ArrowLeft") goToSlide(currentSlide - 1);
 });
 
-// ---- Finish Lesson ----
-function finishLesson() {
-  pauseReel();
-  // Mark lesson as done
-  if (topicData?.id) Storage.markLessonComplete(topicData.id);
-
-  // Show completion screen
-  document.getElementById("slide-dots").style.display = "none";
-  document.getElementById("lesson-header").style.display = "none";
-  document.getElementById("lesson-content").innerHTML = `
-    <div class="card completion-card animate-slide-up">
-      <span class="trophy">🏆</span>
-      <h2 style="font-size:1.6rem; margin-bottom:8px;">Lesson Complete!</h2>
-      <p style="color:var(--text-secondary); margin-bottom:28px;">
-        You finished <strong>${escapeHTML(topicData?.name || "the lesson")}</strong>.<br/>
-        Ready to test yourself?
-      </p>
-      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-        ${topicData?.id
-          ? `<a href="quiz.html?topicId=${topicData.id}" class="btn btn-primary btn-lg">🧠 Take Quiz →</a>`
-          : `<a href="quiz.html?topic=${encodeURIComponent(topicData?.name || "")}" class="btn btn-primary btn-lg">🧠 Take Quiz →</a>`
-        }
-        <button class="btn btn-ghost btn-lg" onclick="startLesson(topicData)">↻ Replay Reel</button>
-        <a class="btn btn-ghost btn-lg" href="study.html">＋ New Study Set</a>
-      </div>
-    </div>`;
-}
-
 function resetLesson() {
+  ReelVideo.clear();
   pauseReel();
   slides = [];
   topicData = null;
   showTopicPicker();
 }
+
+document.getElementById("lesson-reset")?.addEventListener("click", resetLesson);
 
 function escapeHTML(str = "") {
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

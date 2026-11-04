@@ -1,12 +1,9 @@
-(() => {
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = Recognition ? new Recognition() : null;
+(typeof StudygramPrivateSession === "undefined" ? callback => callback() : StudygramPrivateSession.start)(() => {
   const status = document.getElementById("lily-status");
-  const enable = document.getElementById("lily-start");
   const form = document.getElementById("lily-form");
   const input = document.getElementById("lily-input");
+  const transcript = document.getElementById("lily-transcript");
   const send = form.querySelector("button");
-  const wakePhrase = /\bhey\s+(?:lily|lilly)\b/i;
   const destinations = {
     learn: "pages/lesson.html",
     quiz: "pages/quiz.html",
@@ -19,50 +16,45 @@
     study_plan: "How’d that study plan go?",
     general: "How did things go after we talked?",
   };
-  const memoryKey = "studygram.lily.checkin." +
-    (Storage.getStudentProfile()?.studentId || "guest");
+  const memoryKey = "sg_lily_checkin";
 
-  let listening = false;
-  let enabled = true;
-  let speaking = false;
   let thinking = false;
-  let commandTimer;
   let pendingCheckIn;
   let queuedRequest;
   let proposedSet;
   let questionCount = 0;
   let history = [];
+  const microphone = window.createLilyVoice?.({ input, submit });
 
   function today() {
     return new Date().toDateString();
   }
 
-  function openVoiceWindow() {
-    clearTimeout(commandTimer);
-    commandTimer = setTimeout(() => { commandTimer = undefined; }, 12000);
+  function addTranscriptMessage(role, message) {
+    if (!transcript) return;
+    const entry = document.createElement("li");
+    const speaker = document.createElement("strong");
+    speaker.textContent = role === "student" ? "You" : "Lily";
+    entry.dataset.role = role;
+    entry.append(speaker, message);
+    transcript.append(entry);
+    if (transcript.children.length > 8) transcript.firstElementChild.remove();
+    transcript.hidden = false;
+    transcript.scrollTop = transcript.scrollHeight;
   }
 
-  function reply(message, voice) {
+  function reply(message, voice, followUp = message.includes("?")) {
     status.textContent = message;
-    if (!voice || document.hidden) return;
-    if (!window.speechSynthesis) {
-      openVoiceWindow();
-      return;
+    if (transcript) {
+      addTranscriptMessage("lily", message);
+      status.classList.add("indie-visually-hidden");
     }
-    speaking = true;
-    if (listening) recognition.abort();
-    const utterance = new SpeechSynthesisUtterance(message);
-    utterance.lang = "en-IN";
-    utterance.onend = utterance.onerror = () => {
-      speaking = false;
-      if (!document.hidden) openVoiceWindow();
-      start();
-    };
-    window.speechSynthesis.speak(utterance);
+    microphone?.reply(message, voice, followUp);
   }
 
   function getReminder() {
-    const saved = localStorage.getItem(memoryKey);
+    let saved;
+    try { saved = Storage.getPrivateValue(memoryKey); } catch { return null; }
     if (!saved) return null;
     try {
       const reminder = JSON.parse(saved);
@@ -73,23 +65,26 @@
     return { day: saved, step: "general" };
   }
 
+  function clearReminder() {
+    try { Storage.setPrivateValue(memoryKey, null); } catch { /* Chat can continue without a stored reminder. */ }
+  }
+
   function navigate(url) {
-    enabled = false;
-    if (listening) recognition.abort();
+    microphone?.disable();
     window.location.assign(url);
   }
 
   async function talk(phrase, voice) {
-    clearTimeout(commandTimer);
-    commandTimer = undefined;
     const command = phrase.toLowerCase().replace(/[^a-z\s]/g, " ").trim()
       .replace(/\s+/g, " ").replace(/^(?:open|go to|start)\s+/, "").replace(/^the\s+/, "");
     const forget = /^(?:lily )?forget (?:it|that|my check in)$/.test(command);
     if (forget) {
-      localStorage.removeItem(memoryKey);
+      clearReminder();
       pendingCheckIn = undefined;
+      proposedSet = undefined;
       history = [];
       questionCount = 0;
+      if (transcript) transcript.replaceChildren();
       const original = queuedRequest;
       queuedRequest = undefined;
       if (original) return talk(original, voice);
@@ -101,14 +96,26 @@
       const original = queuedRequest;
       queuedRequest = undefined;
       if (command === "skip") return talk(original, voice);
-      history.push({ role: "student", text: `Update after our check-in: ${phrase}` });
+      history.push({ role: "student", text: `Update after our check-in: ${phrase}`.slice(0, input.maxLength) });
       return talk(original, voice);
     }
 
     const yes = /^(?:yes|yeah|yep|sure|please do|do it)$/.test(command);
     if (pendingCheckIn && (yes || command === "check in tomorrow")) {
-      localStorage.setItem(memoryKey, JSON.stringify({ day: today(), step: pendingCheckIn }));
+      const reminder = { day: today(), step: pendingCheckIn };
       pendingCheckIn = undefined;
+      if (typeof StudygramPrivateSession !== "undefined" && !StudygramPrivateSession.user()) {
+        reply("Sign in to Studygram to save check-ins for next time.", voice);
+        return;
+      }
+      try {
+        Storage.setPrivateValue(memoryKey, JSON.stringify(reminder));
+        await Storage.flush();
+      }
+      catch {
+        reply("I couldn’t save the check-in to your account. Try again in a moment.", voice);
+        return;
+      }
       reply("Yeah, I’ll check in next time you drop by after today.", voice);
       return;
     }
@@ -116,11 +123,11 @@
 
     const reminder = getReminder();
     if (reminder && reminder.day !== today()) {
-      localStorage.removeItem(memoryKey);
+      clearReminder();
       queuedRequest = phrase;
       const question = Object.hasOwn(checkInQuestions, reminder.step)
         ? checkInQuestions[reminder.step] : checkInQuestions.general;
-      reply(`Hey, quick check-in. ${question} You can say skip and we’ll get straight to your request.`, voice);
+      reply(`Hey, quick check-in. ${question} You can say or type “skip” to get straight to your request.`, voice);
       return;
     }
 
@@ -146,13 +153,14 @@
 
     status.textContent = "Lily is thinking…";
     let message;
+    let remember = true;
     try {
       const result = await getLilyReply({ message: phrase, history: history.slice(-8), questionCount });
       message = result.reply;
       if (result.studySet) {
         proposedSet = result.studySet;
         questionCount = 0;
-        message += " Say “make it” and I’ll open that study set.";
+        message += " Say or type “make it” to open that study set.";
       } else if (result.studyQuestion) {
         if (questionCount === 4) {
           const params = new URLSearchParams({ focus: phrase.slice(0, 500) });
@@ -161,6 +169,7 @@
           link.href = `pages/study.html?${params}`;
           link.textContent = "Open New Study Set";
           status.append(link);
+          microphone?.reply("Let’s turn that into a quick reel. Select Open New Study Set to continue.", voice, false);
           questionCount = 0;
           return;
         }
@@ -170,6 +179,7 @@
       }
       pendingCheckIn = result.checkIn;
     } catch (error) {
+      remember = false;
       pendingCheckIn = /\bbull(?:y|ied|ying)\b/i.test(phrase) ? "trusted_adult" : undefined;
       message = pendingCheckIn
         ? "Ugh, that wasn’t okay. You didn’t deserve it. Is there someone at school or home you’d feel okay telling?"
@@ -180,100 +190,40 @@
     } else {
       pendingCheckIn = undefined;
     }
-    history.push({ role: "student", text: phrase }, { role: "lily", text: message });
-    history = history.slice(-8);
-    reply(message, voice);
+    if (remember) {
+      history.push({ role: "student", text: phrase }, { role: "lily", text: message });
+      history = history.slice(-8);
+    }
+    reply(message, voice, Boolean(proposedSet || pendingCheckIn || message.includes("?")));
   }
 
   function submit(phrase, voice) {
     const cleaned = phrase.trim().replace(/^[\s,.!?]+/, "");
-    if (!cleaned || thinking || speaking) return false;
+    if (!cleaned || thinking || microphone?.isSpeaking()) return false;
     if (cleaned.length > input.maxLength) {
       status.textContent = "That’s a long one. Send a shorter bit so I can follow.";
       return false;
     }
     thinking = true;
     send.disabled = true;
+    if (transcript) {
+      status.classList.remove("indie-visually-hidden");
+      addTranscriptMessage("student", cleaned);
+    }
+    microphone?.setProcessing(true);
     talk(cleaned, voice).catch(() => {
       reply("Something glitched on my end. Wanna try that again?", voice);
     }).finally(() => {
       thinking = false;
       send.disabled = false;
-      start();
+      microphone?.setProcessing(false);
     });
     return true;
   }
 
-  function offerRetry() {
-    enabled = false;
-    clearTimeout(commandTimer);
-    commandTimer = undefined;
-    enable.hidden = false;
-    if (!thinking && !speaking) status.textContent = "Type to Lily, or enable the microphone to use Hey Lily.";
-  }
-
-  function start() {
-    if (!recognition || !enabled || listening || speaking || thinking || document.hidden) return;
-    try {
-      recognition.start();
-      listening = true;
-      enable.hidden = true;
-    } catch {
-      offerRetry();
-    }
-  }
-
   form.addEventListener("submit", event => {
     event.preventDefault();
-    const message = input.value.replace(/^\s*hey\s+(?:lily|lilly)\b/i, "");
+    const message = input.value.replace(/^\s*hey[\s,.!?]+(?:lily|lilly)\b/i, "");
     if (submit(message, false)) input.value = "";
   });
-
-  if (!recognition) {
-    status.textContent = "Type to Lily. Voice input is unavailable in this browser.";
-    return;
-  }
-  recognition.continuous = true;
-  recognition.lang = "en-IN";
-  recognition.onresult = event => {
-    if (!enabled || speaking || thinking || document.hidden) return;
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      if (!event.results[i].isFinal) continue;
-      let phrase = event.results[i][0].transcript;
-      const wake = wakePhrase.exec(phrase);
-      if (wake) {
-        phrase = phrase.slice(wake.index + wake[0].length);
-        openVoiceWindow();
-        status.textContent = "Lily is listening…";
-      }
-      if (commandTimer !== undefined && submit(phrase, true)) return;
-    }
-  };
-
-  recognition.onerror = ({ error }) => {
-    if (error !== "no-speech" && error !== "aborted") offerRetry();
-  };
-  recognition.onend = () => {
-    listening = false;
-    start();
-  };
-  enable.addEventListener("click", () => {
-    enabled = true;
-    start();
-    if (listening) status.textContent = "Say “Hey Lily” to start.";
-  });
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      clearTimeout(commandTimer);
-      commandTimer = undefined;
-      if (speaking) {
-        window.speechSynthesis.cancel();
-        speaking = false;
-      }
-      if (listening) recognition.abort();
-    } else {
-      start();
-    }
-  });
-  start();
-})();
+});

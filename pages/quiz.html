@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz — Studygram</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
   <meta name="description" content="Adaptive MCQ quizzes that start easy and get harder, with AI explanations for every answer." />
   <link rel="stylesheet" href="../style.css" />
   <style>
-    /* ---- Quiz card — warm parchment with lavender accent ---- */
+    /* Quiz component geometry */
     .quiz-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -17,7 +18,7 @@
       box-shadow: var(--shadow-card);
     }
 
-    /* Difficulty badges — colors driven by body.quiz-theme in style.css */
+    /* Difficulty states */
     .difficulty-badge {
       display: inline-flex;
       align-items: center;
@@ -31,7 +32,6 @@
       text-transform: uppercase;
       margin-bottom: 16px;
     }
-    /* Default palette — quiz-theme body overrides these for lavender */
     .diff-easy   { background: rgba(92,126,102,0.10);   color: #4E7057; border: 1px solid rgba(92,126,102,0.22); }
     .diff-medium { background: rgba(201,169,110,0.12);  color: #9A7A45; border: 1px solid rgba(201,169,110,0.25); }
     .diff-hard   { background: rgba(185,122,120,0.10);  color: #9C5F5D; border: 1px solid rgba(185,122,120,0.22); }
@@ -52,7 +52,7 @@
       margin-bottom: 24px;
     }
 
-    /* Explanation box — lavender-tinted on quiz page (via quiz-theme) */
+    /* Explanation box */
     .explanation-box {
       background: rgba(155,142,196,0.07);
       border: 1px solid rgba(155,142,196,0.22);
@@ -123,49 +123,74 @@
       .question-text { font-size: 1.1rem; }
     }
   </style>
+  <link rel="stylesheet" href="../academy.css" />
 </head>
-<body class="quiz-theme">
+<body inert class="academy">
 
 <div id="toast-container"></div>
 
 <!-- NAVBAR -->
-<nav class="navbar">
-  <a class="navbar-brand" href="../index.html">
-    <div class="logo-icon">📚</div>
-    <span class="gradient-text">Studygram</span>
+<nav class="navbar world-navigation" aria-label="Main navigation">
+  <a class="navbar-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+    <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+    <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
   </a>
   <div class="navbar-links">
     <a href="../index.html" aria-label="Home">🏠 <span>Home</span></a>
     <a href="lesson.html" aria-label="Learn">▶️ <span>Learn</span></a>
     <a href="quiz.html" class="active" aria-label="Quiz">🧠 <span>Quiz</span></a>
     <a href="diary.html" aria-label="Diary">📖 <span>Diary</span></a>
+    <a href="explore.html" aria-label="Explore the World">🧭 <span>Explore</span></a>
     <a href="study.html" aria-label="New Study Set">＋ <span>New Set</span></a>
   </div>
 </nav>
 
-<div class="page-wrapper">
-<div class="container" style="padding-top:32px; padding-bottom:64px; max-width:700px;">
+<main class="container academy-shell">
+  <header class="academy-mast">
+    <div>
+      <p class="academy-kicker">Studygram / Academy</p>
+      <p class="academy-title">Practice lab</p>
+      <p>Quiz yourself on a study set and review the explanation after each answer.</p>
+    </div>
+    <span class="academy-mast-mark" aria-hidden="true"></span>
+  </header>
+  <div class="academy-workspace">
+    <nav class="academy-dock" aria-label="Academy workspace">
+      <p class="academy-dock-label" aria-hidden="true">Workspace</p>
+      <a href="study.html"><span aria-hidden="true" class="academy-dock-icon academy-dock-create"></span>Create</a>
+      <a href="lesson.html"><span aria-hidden="true" class="academy-dock-icon academy-dock-learn"></span>Learn</a>
+      <a href="quiz.html" aria-current="page"><span aria-hidden="true" class="academy-dock-icon academy-dock-practice"></span>Practice</a>
+    </nav>
+    <div class="academy-window">
+      <div class="academy-window-bar" aria-hidden="true"><span>Quiz console</span></div>
+      <div class="academy-window-body">
 
   <!-- QUIZ HEADER -->
   <div id="quiz-header" style="display:none; margin-bottom:24px;" class="animate-slide-down">
     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
       <div>
-        <p class="slide-number" id="q-label">QUESTION 1 OF 9</p>
-        <h1 id="quiz-topic-name" style="font-size:1.4rem;"></h1>
+        <p class="slide-number" id="q-label">PREPARING QUIZ</p>
+        <h1 id="quiz-topic-name"></h1>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="resetQuiz()">↩ Change Topic</button>
+      <div class="study-actions">
+        <a id="quiz-explore-link" class="btn btn-ghost btn-sm" href="explore.html" hidden>← Back to Explore</a>
+        <button class="btn btn-ghost btn-sm" id="quiz-reset" type="button">↩ Change Topic</button>
+      </div>
     </div>
     <div class="progress-bar-wrapper" style="margin-top:14px;">
-      <div class="progress-bar-fill" id="quiz-progress" style="width:11%;"></div>
+      <div class="progress-bar-fill" id="quiz-progress" style="width:0%;"></div>
     </div>
   </div>
 
   <!-- MAIN QUIZ CONTENT -->
   <div id="quiz-content"></div>
 
-</div>
-</div>
+      </div>
+    </div>
+  </div>
+</main>
 
+<script src="../js/private-session.js"></script>
 <script src="../js/storage.js"></script>
 <script src="../js/ai.js"></script>
 <script src="../js/app.js"></script>

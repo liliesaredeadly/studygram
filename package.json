@@ -1,12 +1,15 @@
 {
   "name": "studygram",
   "private": true,
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "start": "node server/index.js",
     "test": "node --test"
   },
   "dependencies": {
-    "pdfjs-dist": "^4.10.38"
+    "@napi-rs/canvas": "1.1.0",
+    "pdfjs-dist": "6.5.438"
   }
 }

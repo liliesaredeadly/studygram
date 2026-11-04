@@ -2,12 +2,25 @@ async function requestStudygramAI(endpoint, input) {
   if (window.location.protocol === "file:") {
     throw new Error("Open Studygram through its local server to use live AI.");
   }
-  const response = await fetch(`/api/${endpoint}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const result = await response.json().catch(() => null);
+  let response;
+  let result;
+  try {
+    response = await fetch(`/api/${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      signal: AbortSignal.timeout(55000),
+    });
+    result = await response.json().catch(error => {
+      if (error.name === "TimeoutError" || error.name === "AbortError") throw error;
+      return null;
+    });
+  } catch (error) {
+    if (error.name === "TimeoutError" || error.name === "AbortError") {
+      throw new Error("The AI took too long. Try sending your request again.");
+    }
+    throw new Error("Studygram couldn’t reach the AI. Try again.");
+  }
   if (!response.ok || !result) {
     throw new Error(result?.error || "Studygram couldn’t reach the AI. Try again.");
   }
@@ -15,7 +28,10 @@ async function requestStudygramAI(endpoint, input) {
 }
 
 function generateStudySet({ name, sourceText = "", focus = "" }) {
-  return requestStudygramAI("study-set", { name, sourceText, focus });
+  const account = typeof StudygramPrivateSession === "undefined" ? {} : {
+    accountId: StudygramPrivateSession.user()?.id ?? null,
+  };
+  return requestStudygramAI("study-set", { name, sourceText, focus, ...account });
 }
 
 function getLilyReply(input) {
@@ -24,6 +40,10 @@ function getLilyReply(input) {
 
 function analyzeDiary(entry) {
   return requestStudygramAI("diary", { entry });
+}
+
+function draftDiary(entry) {
+  return requestStudygramAI("diary-draft", { entry });
 }
 
 async function loadStudyContent(topic) {

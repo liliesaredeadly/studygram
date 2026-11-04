@@ -4,8 +4,346 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign In — Studygram Student Passport</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
   <meta name="description" content="Sign in to Studygram and receive your official Student Passport ID card." />
   <link rel="stylesheet" href="../style.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap');
+
+    .passport-wrapper {
+      --passport-royal: #482769;
+      --passport-ink: #39294b;
+      --passport-muted: #665473;
+      --passport-rule: #9a87a7;
+      --passport-paper: #f8eedb;
+      --passport-script: 'Pinyon Script', 'French Script MT', 'Snell Roundhand', 'Segoe Script', 'Brush Script MT', cursive;
+      --passport-type: 'Courier New', Courier, monospace;
+      --passport-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23633f82' d='m8 2.6 1.4 3.7 3.9.1-3.1 2.4 1.1 3.8L8 10.4l-3.3 2.2 1.1-3.8-3.1-2.4 3.9-.1z'/%3E%3C/svg%3E");
+      --passport-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.26'/%3E%3C/svg%3E");
+      width: min(100%, 31rem);
+      margin-inline: auto;
+      container-type: inline-size;
+      perspective: 1200px;
+    }
+
+    .passport-inner {
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 720ms cubic-bezier(.4, .17, .2, 1);
+    }
+
+    .passport-inner.flipped { transform: rotateY(180deg); }
+
+    .passport-front,
+    .passport-back {
+      display: grid;
+      grid-template-rows: repeat(2, 1fr);
+      gap: 1px;
+      border-radius: 3cqw;
+      box-shadow: 0 14px 36px #3c25432a, 0 3px 8px #3625451f;
+      backface-visibility: hidden;
+    }
+
+    .passport-back {
+      position: absolute;
+      inset: 0;
+      transform: rotateY(180deg);
+    }
+
+    .passport-page {
+      position: relative;
+      isolation: isolate;
+      min-height: 60cqw;
+      padding: 5.75cqw;
+      border: clamp(1px, .38cqw, 2px) solid var(--passport-royal);
+      border-radius: 3cqw;
+      background:
+        var(--passport-grain),
+        radial-gradient(ellipse at 62% 39%, #fff8eb, transparent 75%),
+        var(--passport-paper);
+      color: var(--passport-ink);
+      text-align: start;
+    }
+
+    .passport-page:nth-child(1) { box-shadow: inset 0 -8px 11px -9px #48324c80; }
+    .passport-page:nth-child(2) { box-shadow: inset 0 8px 11px -9px #48324c80; }
+
+    .passport-edge {
+      position: absolute;
+      z-index: -1;
+      inset: 1.05cqw;
+      border: 1px solid #9472a46e;
+      border-radius: 2.45cqw;
+      pointer-events: none;
+    }
+
+    .passport-edge span {
+      position: absolute;
+      background-image: var(--passport-star);
+    }
+
+    .passport-stars--top,
+    .passport-stars--bottom {
+      inset-inline: .9cqw;
+      height: 2.65cqw;
+      background-repeat: round no-repeat;
+      background-size: 3.4cqw 100%;
+    }
+
+    .passport-stars--top { inset-block-start: .4cqw; }
+    .passport-stars--bottom { inset-block-end: .4cqw; }
+
+    .passport-stars--left,
+    .passport-stars--right {
+      inset-block: 3.25cqw;
+      width: 2.65cqw;
+      background-repeat: no-repeat round;
+      background-size: 100% 3.4cqw;
+    }
+
+    .passport-stars--left { inset-inline-start: .35cqw; }
+    .passport-stars--right { inset-inline-end: .35cqw; }
+
+    .passport-page--portrait {
+      display: grid;
+      grid-template-columns: 31% 1fr;
+      align-items: center;
+      justify-items: center;
+    }
+
+    .passport-cover-title,
+    .passport-identity-title,
+    .passport-back-title {
+      margin: 0;
+      color: var(--passport-royal);
+      font-family: var(--passport-script);
+      font-weight: 400;
+      line-height: .92;
+    }
+
+    .passport-cover-title {
+      font-size: 13.2cqw;
+      transform: rotate(-90deg);
+      white-space: nowrap;
+    }
+
+    .passport-cover-portrait {
+      position: relative;
+      width: 42cqw;
+      max-width: 92%;
+      margin: 0;
+    }
+
+    .passport-photo {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 9 / 10;
+      overflow: hidden;
+      padding: 0;
+      border: 1px solid var(--passport-rule);
+      border-radius: 1.5cqw;
+      background:
+        radial-gradient(ellipse at 50% 42%, #fff6e3 0%, #e9d8e4 78%),
+        var(--passport-paper);
+    }
+
+    .passport-photo > img {
+      position: absolute;
+      inset: 0;
+      display: block;
+      margin: auto;
+    }
+
+    .passport-photo .passport-avatar-art {
+      width: 68%;
+      height: 68%;
+      object-fit: contain;
+    }
+
+    .passport-photo .passport-uploaded-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .passport-corner-star {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 8.2cqw;
+      height: 8.2cqw;
+      background: var(--passport-royal);
+      color: transparent;
+      clip-path: polygon(50% 0%, 62% 36%, 100% 36%, 70% 59%, 81% 96%, 50% 73%, 19% 96%, 30% 59%, 0 36%, 38% 36%);
+      pointer-events: none;
+    }
+
+    .passport-corner-star--top { top: -2.5cqw; right: -3.3cqw; transform: rotate(12deg); }
+    .passport-corner-star--bottom { bottom: -2.25cqw; left: -3.2cqw; transform: rotate(-13deg) scale(.83); }
+
+    .passport-cover-issuer,
+    .passport-identity-heading {
+      margin: 0;
+      color: var(--passport-royal);
+      font: 700 clamp(.49rem, 2.07cqw, .67rem)/1.15 var(--passport-type);
+      letter-spacing: .095em;
+      text-transform: uppercase;
+    }
+
+    .passport-cover-issuer {
+      position: absolute;
+      right: 5.7cqw;
+      bottom: 3.75cqw;
+      font-size: clamp(.44rem, 1.65cqw, .56rem);
+    }
+
+    .passport-page--identity {
+      display: grid;
+      grid-template-columns: 29% minmax(0, 1fr);
+      align-items: center;
+      column-gap: 4.2cqw;
+    }
+
+    .passport-identity-portrait {
+      display: grid;
+      justify-items: center;
+      gap: 2cqw;
+      margin: 0;
+    }
+
+    .passport-identity-portrait .passport-photo { aspect-ratio: 4 / 5; }
+    .passport-identity-title { font-size: 7cqw; }
+
+    .passport-identity-details { min-width: 0; }
+    .passport-identity-heading { margin-bottom: 2.15cqw; }
+
+    .passport-record {
+      margin: 0;
+      border-block-start: 1px solid var(--passport-rule);
+      font-family: var(--passport-type);
+    }
+
+    .passport-record > div {
+      display: grid;
+      grid-template-columns: 36% minmax(0, 1fr);
+      align-items: baseline;
+      gap: 1.5cqw;
+      padding: .95cqw 0;
+      border-block-end: 1px solid var(--passport-rule);
+    }
+
+    .passport-record dt {
+      color: var(--passport-muted);
+      font-size: clamp(.5rem, 1.99cqw, .68rem);
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .passport-record dd {
+      margin: 0;
+      color: var(--passport-ink);
+      font-size: clamp(.57rem, 2.49cqw, .81rem);
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .passport-record dd.placeholder { color: var(--passport-muted); }
+
+    .passport-record .passport-signature {
+      color: var(--passport-royal);
+      font-family: var(--passport-script);
+      font-size: clamp(.85rem, 4.6cqw, 1.42rem);
+      line-height: 1.05;
+    }
+
+    .passport-page--reverse,
+    .passport-page--endorsement {
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 3cqw;
+      text-align: center;
+    }
+
+    .passport-back-title { font-size: 10cqw; }
+
+    .passport-back-emblem {
+      display: grid;
+      place-items: center;
+      width: 17cqw;
+      aspect-ratio: 1;
+      border: 3px double var(--passport-rule);
+      border-radius: 50%;
+      color: var(--passport-royal);
+      font-size: 8cqw;
+      line-height: 1;
+    }
+
+    .passport-reverse-copy {
+      max-width: 60ch;
+      margin: 0;
+      color: var(--passport-muted);
+      font: 400 clamp(.58rem, 2.48cqw, .8rem)/1.55 var(--passport-type);
+    }
+
+    .passport-back-signature {
+      width: min(100%, 31ch);
+      min-width: 0;
+      color: var(--passport-muted);
+      font: 700 clamp(.5rem, 1.99cqw, .68rem)/1.25 var(--passport-type);
+    }
+
+    .passport-back-signature p { margin: 0; }
+
+    .passport-back-signature .passport-signature {
+      padding: .65cqw 0 .2cqw;
+      border-bottom: 1px solid var(--passport-rule);
+      color: var(--passport-royal);
+      font: 400 clamp(.8rem, 4.5cqw, 1.38rem)/1.05 var(--passport-script);
+      overflow-wrap: anywhere;
+    }
+
+    .passport-mrz {
+      max-width: 100%;
+      margin: 0;
+      padding-top: 2cqw;
+      border-top: 1px solid var(--passport-rule);
+      color: var(--passport-ink);
+      font: 400 clamp(.42rem, 1.9cqw, .61rem)/1.5 var(--passport-type);
+      overflow-wrap: anywhere;
+    }
+
+    .back-barcode {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 1.5px;
+      max-width: 100%;
+      height: 24px;
+      color: var(--passport-royal);
+    }
+
+    .barcode-bar { background: currentColor; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .passport-inner { transition: none; }
+    }
+    .account-panel {
+      max-width: 440px;
+      margin: 42px auto 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--bg-card);
+    }
+    .account-panel h1 { margin: 0 0 8px; font-size: 1.8rem; }
+    .account-panel form { display: grid; gap: 12px; margin-top: 16px; }
+    .account-panel .btn { width: fit-content; }
+    .account-panel [role="status"] { min-height: 1.4em; }
+    .account-panel[hidden], .account-panel form[hidden], .login-layout[hidden] { display: none; }
+    #passport-member { max-width: min(90%, 920px); }
+  </style>
   <style>
     /* ================================================================
        LOGIN PAGE — Full-bleed editorial layout
@@ -25,7 +363,7 @@
     .login-layout {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 0.93fr) minmax(0, 1.07fr);
       min-height: 100vh;
       padding-top: 80px;
     }
@@ -83,34 +421,113 @@
     }
 
     /* Avatar picker */
+    .avatar-picker {
+      --avatar-cream: #f6ecd9;
+      --avatar-line: #cfbca5;
+      --avatar-ink: #49332d;
+      --avatar-active: #8b3e5b;
+      min-inline-size: 0;
+      border: 0;
+      padding: 0;
+    }
+    .avatar-picker-caption {
+      margin: 0 0 10px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
     .avatar-grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
-      margin: 4px 0 20px;
     }
     .avatar-option {
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border);
-      background: var(--bg-secondary);
-      font-size: 1.4rem;
+      position: relative;
       cursor: pointer;
+    }
+    .avatar-option input {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      opacity: 0;
+    }
+    .avatar-tile {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      grid-template-rows: 48px minmax(2.35em, auto);
+      gap: 4px;
+      block-size: 100%;
+      padding: 7px 4px 5px;
+      border: 1px solid var(--avatar-line);
+      border-radius: 5px;
+      color: var(--avatar-ink);
+      background: var(--avatar-cream);
+      box-shadow: 0 2px 0 #ddcbb5;
+      transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+    }
+    .avatar-tile img { align-self: center; }
+    .avatar-name {
+      align-self: center;
+      text-align: center;
+      font: 600 0.68rem/1.15 'Jost', sans-serif;
+      overflow-wrap: anywhere;
+    }
+    @media (hover: hover) {
+      .avatar-option:hover .avatar-tile {
+        transform: translateY(-2px);
+        border-color: var(--avatar-active);
+        box-shadow: 0 4px 0 #ddcbb5;
+      }
+    }
+    .avatar-option input:checked + .avatar-tile {
+      border-color: var(--avatar-active);
+      box-shadow: inset 0 0 0 1px var(--avatar-active), 0 2px 0 var(--avatar-active);
+      background: #f7e5df;
+    }
+    .avatar-option input:checked + .avatar-tile::after {
+      content: '';
+      position: absolute;
+      inset: 5px 5px auto auto;
+      width: 12px;
+      height: 12px;
+      background: var(--avatar-active);
+      clip-path: polygon(0 40%, 20% 40%, 20% 60%, 40% 60%, 40% 40%, 60% 40%, 60% 20%, 80% 20%, 80% 0, 100% 0, 100% 40%, 80% 40%, 80% 60%, 60% 60%, 60% 80%, 40% 80%, 40% 100%, 20% 100%, 20% 80%, 0 80%);
+    }
+    .avatar-option input:focus-visible + .avatar-tile {
+      outline: 2px solid var(--avatar-active);
+      outline-offset: 3px;
+    }
+    .portrait-upload {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      justify-content: center;
-      transition: all var(--transition);
+      gap: 8px;
     }
-    .avatar-option:hover {
-      border-color: var(--border-accent);
-      background: rgba(201,169,110,0.08);
-      transform: scale(1.08);
+    .portrait-input {
+      width: 100%;
+      max-width: 100%;
+      color: var(--text-primary);
+      font: 0.83rem 'Jost', sans-serif;
     }
-    .avatar-option.selected {
-      border-color: var(--accent-soft);
-      background: rgba(201,169,110,0.12);
-      box-shadow: 0 0 0 3px rgba(201,169,110,0.18);
+    .portrait-input::file-selector-button,
+    .portrait-remove {
+      margin-right: 8px;
+      padding: 7px 12px;
+      border: 1px solid #9a83a9;
+      border-radius: 4px;
+      background: #f2e9f2;
+      color: #432455;
+      font: inherit;
+      cursor: pointer;
+    }
+    .portrait-remove { font-size: 0.8rem; }
+    .portrait-status { color: var(--text-muted); font-size: 0.8rem; }
+    @media (max-width: 600px) {
+      .avatar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .avatar-tile { transition: none; }
+      .avatar-option:hover .avatar-tile { transform: none; }
     }
 
     /* Submit button — glows on hover */
@@ -164,9 +581,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 48px 52px;
-      gap: 28px;
+      justify-content: flex-start;
+      padding: 36px clamp(22px, 3vw, 60px);
+      gap: 14px;
     }
 
     .card-panel-label {
@@ -176,238 +593,6 @@
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--text-muted);
-    }
-
-    /* ================================================================
-       PASSPORT ID CARD — 3D flip design
-       ================================================================ */
-
-    .passport-wrapper {
-      perspective: 1200px;
-      width: 320px;
-    }
-
-    .passport-inner {
-      position: relative;
-      width: 320px;
-      height: 200px;
-      transform-style: preserve-3d;
-      transition: transform 0.85s cubic-bezier(0.4, 0.2, 0.2, 1);
-    }
-
-    .passport-inner.flipped {
-      transform: rotateY(180deg);
-    }
-
-    /* Shared face styles */
-    .passport-front,
-    .passport-back {
-      position: absolute;
-      inset: 0;
-      border-radius: 14px;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      overflow: hidden;
-    }
-
-    /* ---- FRONT FACE ---- */
-    .passport-front {
-      background: linear-gradient(145deg, #FAF7F0 0%, #F3ECE0 60%, #EDE4D3 100%);
-      border: 1.5px solid rgba(201,169,110,0.4);
-      box-shadow:
-        0 8px 40px rgba(139,115,85,0.18),
-        0 0 0 1px rgba(201,169,110,0.15),
-        inset 0 1px 0 rgba(255,255,255,0.8);
-    }
-
-    /* Gold header bar */
-    .passport-header {
-      background: linear-gradient(135deg, #8B7355 0%, #C9A96E 50%, #D4B896 100%);
-      padding: 9px 14px 8px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .passport-header .org {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: rgba(255,252,245,0.95);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .passport-header .doc-type {
-      font-family: 'Jost', sans-serif;
-      font-size: 0.6rem;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(255,252,245,0.75);
-    }
-
-    /* Card body */
-    .passport-body {
-      display: flex;
-      gap: 14px;
-      padding: 12px 14px 10px;
-    }
-
-    /* Photo area */
-    .passport-photo {
-      width: 68px;
-      height: 78px;
-      flex-shrink: 0;
-      border-radius: 6px;
-      background: linear-gradient(145deg, #EDE4D3, #E4D8C4);
-      border: 1.5px solid rgba(201,169,110,0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.4rem;
-      position: relative;
-      overflow: hidden;
-    }
-    /* Subtle photo corner marks */
-    .passport-photo::before,
-    .passport-photo::after {
-      content: '';
-      position: absolute;
-      width: 10px; height: 10px;
-      border-color: rgba(201,169,110,0.5);
-      border-style: solid;
-    }
-    .passport-photo::before {
-      top: 3px; left: 3px;
-      border-width: 1.5px 0 0 1.5px;
-    }
-    .passport-photo::after {
-      bottom: 3px; right: 3px;
-      border-width: 0 1.5px 1.5px 0;
-    }
-
-    /* Fields */
-    .passport-fields { flex: 1; min-width: 0; }
-    .passport-field  { margin-bottom: 7px; }
-    .passport-field .field-label {
-      font-family: 'Jost', sans-serif;
-      font-size: 0.55rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 1px;
-    }
-    .passport-field .field-value {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.2;
-    }
-    .passport-field .field-value.placeholder {
-      color: var(--text-light);
-      font-style: italic;
-      font-weight: 400;
-    }
-
-    /* Seal / emblem watermark */
-    .passport-seal {
-      position: absolute;
-      bottom: 22px; right: 10px;
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(201,169,110,0.22);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-      opacity: 0.30;
-      transform: rotate(-12deg);
-    }
-
-    /* Holographic shimmer strip */
-    .passport-holographic {
-      height: 7px;
-      background: linear-gradient(
-        90deg,
-        rgba(201,169,110,0.5) 0%,
-        rgba(155,142,196,0.6) 18%,
-        rgba(122,158,142,0.5) 36%,
-        rgba(185,122,120,0.5) 54%,
-        rgba(201,169,110,0.6) 72%,
-        rgba(155,142,196,0.5) 90%,
-        rgba(201,169,110,0.5) 100%
-      );
-      background-size: 300% 100%;
-      animation: holographic 4s linear infinite;
-      margin: 0 14px 8px;
-      border-radius: var(--radius-full);
-    }
-
-    /* MRZ — machine-readable zone */
-    .passport-mrz {
-      background: rgba(139,115,85,0.04);
-      border-top: 1px solid rgba(201,169,110,0.2);
-      padding: 5px 12px 6px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.48rem;
-      color: var(--text-muted);
-      letter-spacing: 0.05em;
-      line-height: 1.5;
-    }
-
-    /* ---- BACK FACE ---- */
-    .passport-back {
-      background: linear-gradient(145deg, #EDE4D3 0%, #E4D8C4 100%);
-      border: 1.5px solid rgba(201,169,110,0.4);
-      box-shadow:
-        0 8px 40px rgba(139,115,85,0.18),
-        0 0 0 1px rgba(201,169,110,0.15);
-      transform: rotateY(180deg);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .back-stripe {
-      background: linear-gradient(90deg, #2C2318, #4A3D2F);
-      height: 36px;
-      margin: 24px 0 12px;
-    }
-    .back-content {
-      padding: 0 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-    }
-    .signature-label {
-      font-family: 'Jost', sans-serif;
-      font-size: 0.55rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-    .signature-line {
-      height: 1px;
-      background: var(--border-accent);
-      margin: 16px 0 4px;
-    }
-    .back-barcode {
-      display: flex;
-      gap: 2px;
-      align-items: flex-end;
-      height: 22px;
-      margin-top: 8px;
-      opacity: 0.5;
-    }
-    .barcode-bar {
-      width: 2px;
-      background: var(--accent);
-      border-radius: 1px;
     }
 
     /* ================================================================
@@ -427,6 +612,7 @@
       transition: all var(--transition);
     }
     .flip-btn:hover { color: var(--accent); border-color: var(--border-accent); }
+    .flip-btn:focus-visible { outline: 2px solid #522976; outline-offset: 3px; }
 
     /* ================================================================
        SPARKLE PARTICLES (JS adds these to body)
@@ -450,19 +636,25 @@
       z-index: 500;
       display: flex;
       align-items: center;
-      justify-content: center;
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: 20px 12px;
       flex-direction: column;
       gap: 28px;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.4s ease, background 0.4s ease;
     }
+    .success-overlay[hidden] { display: none; }
     .success-overlay.active {
       pointer-events: all;
       opacity: 1;
       background: rgba(250,247,240,0.96);
     }
     .success-overlay .success-card {
+      width: min(100%, 560px);
+      flex: none;
+      margin-block: auto;
       text-align: center;
       animation: slideInUp 0.5s 0.3s ease both;
     }
@@ -473,32 +665,12 @@
     .success-overlay p {
       font-size: 0.92rem;
       font-style: italic;
-      margin-bottom: 32px;
+      margin-bottom: 18px;
     }
-
-    /* Big passport card in success overlay */
-    .passport-large {
-      transform: scale(1.4);
-      transform-origin: center center;
-      animation: cardReveal 0.7s 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-      filter: drop-shadow(0 16px 48px rgba(139,115,85,0.28));
-    }
-    @keyframes cardReveal {
-      from { opacity: 0; transform: scale(0.6) rotateY(-20deg); }
-      to   { opacity: 1; transform: scale(1.4) rotateY(0deg); }
-    }
-
-    /* ================================================================
-       ANIMATIONS
-       ================================================================ */
-    @keyframes holographic {
-      0%   { background-position: 300% center; }
-      100% { background-position: -300% center; }
-    }
-
-    @keyframes cardShimmer {
-      0%   { background-position: -200% center; }
-      100% { background-position:  200% center; }
+    .success-overlay .passport-wrapper { margin: 0 auto 20px; }
+    body.passport-modal-open { overflow: hidden; }
+    @media (prefers-reduced-motion: reduce) {
+      .success-overlay, .success-overlay .success-card { animation: none; transition: none; }
     }
 
     /* ================================================================
@@ -509,8 +681,6 @@
       .form-panel   { padding: 32px 24px; }
       .form-panel::after { display: none; }
       .card-panel   { padding: 24px; }
-      .passport-wrapper { width: 290px; }
-      .passport-inner   { width: 290px; height: 185px; }
     }
   </style>
 </head>
@@ -521,9 +691,9 @@
 
 <!-- ===================== NAVBAR ===================== -->
 <nav class="navbar">
-  <a class="navbar-brand" href="../index.html">
-    <div class="logo-icon">📚</div>
-    <span class="gradient-text">Studygram</span>
+  <a class="navbar-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+    <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+    <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
   </a>
   <div class="navbar-links">
     <a href="../index.html">🏠 <span>Home</span></a>
@@ -532,7 +702,31 @@
 </nav>
 
 <!-- ===================== MAIN LAYOUT ===================== -->
-<div class="login-layout">
+<section class="account-panel" id="passport-account" aria-labelledby="passport-account-title">
+  <h1 id="passport-account-title">Sign in to Studygram</h1>
+  <p>Use one account for your Passport, saved study sets, diary and Community.</p>
+  <form id="passport-account-form" method="post" hidden>
+    <label for="passport-account-username">Nickname</label>
+    <input class="form-input" id="passport-account-username" name="username" type="text" maxlength="24" pattern="[A-Za-z0-9][A-Za-z0-9_\-]{2,23}" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+    <label for="passport-account-password">Password</label>
+    <input class="form-input" id="passport-account-password" name="password" type="password" maxlength="128" autocomplete="current-password" aria-describedby="passport-account-hint" required>
+    <small id="passport-account-hint" hidden>Choose at least 15 characters.</small>
+    <button class="btn btn-primary" id="passport-account-submit" type="submit">Sign in</button>
+    <button class="btn btn-ghost" id="passport-account-mode" type="button">Create an account</button>
+  </form>
+  <p id="passport-account-status" role="status">Checking your session…</p>
+</section>
+<section class="account-panel" id="passport-member" aria-label="Your Studygram account" hidden>
+  <p>Signed in as <strong id="passport-member-name"></strong></p>
+  <div id="passport-import-panel" hidden>
+    <p>Older Studygram records linked to this account were found on this browser. Import them to bring them into your account. Existing account records take priority.</p>
+    <button class="btn btn-ghost" id="passport-import" type="button">Import my browser data</button>
+  </div>
+  <button class="btn btn-ghost" id="passport-sign-out" type="button">Sign out</button>
+  <a class="btn btn-primary" id="passport-return" hidden>Continue</a>
+  <p id="passport-member-status" role="status"></p>
+</section>
+<div class="login-layout" hidden>
 
   <!-- ======= LEFT: FORM ======= -->
   <div class="form-panel">
@@ -542,15 +736,23 @@
       <p>Fill in your details and receive your official student ID card — yours forever.</p>
     </div>
 
-    <form id="signin-form" class="stagger-children" autocomplete="off">
+    <form id="signin-form" class="stagger-children" method="post" autocomplete="off">
 
       <!-- Avatar picker -->
+      <fieldset class="form-group avatar-picker" aria-describedby="avatar-picker-caption">
+        <legend class="form-label">Choose your avatar</legend>
+        <p class="avatar-picker-caption" id="avatar-picker-caption">Pick a pixel icon for your Student Passport.</p>
+        <div class="avatar-grid" id="avatar-grid"></div>
+      </fieldset>
+
       <div class="form-group">
-        <label class="form-label">Choose your avatar</label>
-        <div class="avatar-grid" id="avatar-grid">
-          <!-- Populated by JS -->
+        <label class="form-label" for="passport-portrait">Passport photo <span>(optional)</span></label>
+        <div class="portrait-upload">
+          <input class="portrait-input" type="file" id="passport-portrait" accept="image/jpeg,image/png,image/webp" aria-describedby="portrait-hint portrait-status" />
+          <button class="portrait-remove" id="portrait-remove" type="button" hidden>Use pixel avatar</button>
         </div>
-        <input type="hidden" id="selected-avatar" value="🎓" />
+        <p class="portrait-status" id="portrait-hint">JPG, PNG or WebP up to 10 MB. Saved with your private Passport.</p>
+        <p class="portrait-status" id="portrait-status" role="status"></p>
       </div>
 
       <!-- Name -->
@@ -618,7 +820,7 @@
 
       <p style="text-align:center; font-size:0.78rem; color:var(--text-muted); margin-top:14px; font-style:italic;">
         Already have a passport?
-        <a href="#" onclick="loadExistingProfile(event)" style="color:var(--accent); text-decoration:none;">View it here →</a>
+        <a href="#" id="passport-view-existing" style="color:var(--accent); text-decoration:none;">View it here →</a>
       </p>
 
     </form>
@@ -628,84 +830,82 @@
   <div class="card-panel">
     <span class="card-panel-label">✦ Live Preview</span>
 
-    <!-- Passport card wrapper (for flip effect) -->
     <div class="passport-wrapper" id="passport-wrapper">
       <div class="passport-inner" id="passport-inner">
-
-        <!-- FRONT -->
-        <div class="passport-front" id="passport-front">
-          <div class="passport-header">
-            <span class="passport-header .org" style="font-family:'Cormorant Garamond',serif;font-size:0.78rem;font-weight:700;color:rgba(255,252,245,0.95);letter-spacing:0.12em;text-transform:uppercase;">
-              ✦ Studygram Academy
-            </span>
-            <span style="font-family:'Jost',sans-serif;font-size:0.58rem;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,252,245,0.72);">
-              Student Passport
-            </span>
-          </div>
-
-          <div class="passport-body">
-            <!-- Photo -->
-            <div class="passport-photo" id="card-avatar">🎓</div>
-
-            <!-- Fields -->
-            <div class="passport-fields">
-              <div class="passport-field">
-                <div class="field-label">Surname, Given Name</div>
-                <div class="field-value placeholder" id="card-name">Your Name</div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <div class="passport-field">
-                  <div class="field-label">Institution</div>
-                  <div class="field-value placeholder" id="card-school" style="font-size:0.8rem;">School</div>
-                </div>
-                <div class="passport-field">
-                  <div class="field-label">Year</div>
-                  <div class="field-value placeholder" id="card-year" style="font-size:0.8rem;">Year</div>
-                </div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <div class="passport-field">
-                  <div class="field-label">Passport No.</div>
-                  <div class="field-value" id="card-id" style="font-size:0.78rem;color:var(--accent);">SG-••••</div>
-                </div>
-                <div class="passport-field">
-                  <div class="field-label">Stream</div>
-                  <div class="field-value placeholder" id="card-stream" style="font-size:0.78rem;">Stream</div>
-                </div>
-              </div>
+        <div class="passport-front" id="passport-front" aria-label="Open Student Passport">
+          <section class="passport-page passport-page--portrait" aria-label="Portrait page">
+            <div class="passport-edge" aria-hidden="true">
+              <span class="passport-stars--top"></span>
+              <span class="passport-stars--right"></span>
+              <span class="passport-stars--bottom"></span>
+              <span class="passport-stars--left"></span>
             </div>
+            <span class="passport-cover-title" aria-hidden="true">Passport</span>
+            <span class="passport-cover-issuer">Studygram Academy</span>
+            <div class="passport-cover-portrait">
+              <div class="passport-photo" id="cover-avatar"></div>
+              <span class="passport-corner-star passport-corner-star--top" aria-hidden="true">★</span>
+              <span class="passport-corner-star passport-corner-star--bottom" aria-hidden="true">★</span>
+            </div>
+          </section>
 
-            <!-- Watermark seal -->
-            <div class="passport-seal">📚</div>
-          </div>
-
-          <div class="passport-holographic"></div>
-
-          <div class="passport-mrz" id="card-mrz">
-            P&lt;SGR&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/>
-            SG0000000000&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;6STUDYGRAM
-          </div>
+          <section class="passport-page passport-page--identity" aria-label="Student identity page">
+            <div class="passport-edge" aria-hidden="true">
+              <span class="passport-stars--top"></span>
+              <span class="passport-stars--right"></span>
+              <span class="passport-stars--bottom"></span>
+              <span class="passport-stars--left"></span>
+            </div>
+            <div class="passport-identity-portrait">
+              <div class="passport-photo" id="card-avatar"></div>
+              <span class="passport-identity-title" aria-hidden="true">Passport</span>
+            </div>
+            <div class="passport-identity-details">
+              <h2 class="passport-identity-heading">Student Passport</h2>
+              <dl class="passport-record">
+                <div class="passport-record-row"><dt>Full name</dt><dd id="card-name" class="placeholder">Your name</dd></div>
+                <div class="passport-record-row"><dt>Institution</dt><dd id="card-school" class="placeholder">Your school</dd></div>
+                <div class="passport-record-row"><dt>Academic year</dt><dd id="card-year" class="placeholder">Your year</dd></div>
+                <div class="passport-record-row"><dt>Course / stream</dt><dd id="card-stream">Science</dd></div>
+                <div class="passport-record-row"><dt>Passport no.</dt><dd id="card-id">SG-••••</dd></div>
+                <div class="passport-record-row"><dt>Signature</dt><dd class="passport-signature" id="card-signature">—</dd></div>
+              </dl>
+            </div>
+          </section>
         </div>
 
-        <!-- BACK -->
-        <div class="passport-back" id="passport-back">
-          <div class="back-stripe"></div>
-          <div class="back-content">
-            <div class="signature-label">Holder's Signature</div>
-            <div class="signature-line"></div>
-            <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.1rem;color:var(--text-muted);opacity:0.5;" id="back-signature">—</div>
-            <div class="back-barcode" id="back-barcode"></div>
-          </div>
-          <div style="padding:8px 16px 10px;font-family:'Jost',sans-serif;font-size:0.52rem;color:var(--text-muted);letter-spacing:0.04em;line-height:1.6;border-top:1px solid rgba(201,169,110,0.2);margin-top:auto;">
-            This card is the property of Studygram Academy. Valid for the current academic session.
-            If found, please return to the Learning Office.
-          </div>
+        <div class="passport-back" id="passport-back" aria-label="Reverse of Student Passport" aria-hidden="true">
+          <section class="passport-page passport-page--reverse" aria-label="Issuing academy">
+            <div class="passport-edge" aria-hidden="true">
+              <span class="passport-stars--top"></span>
+              <span class="passport-stars--right"></span>
+              <span class="passport-stars--bottom"></span>
+              <span class="passport-stars--left"></span>
+            </div>
+            <span class="passport-back-emblem" aria-hidden="true">✦</span>
+            <p class="passport-back-title">Studygram Academy</p>
+            <p class="passport-reverse-copy">Student Passport · Issued by Studygram</p>
+          </section>
+          <section class="passport-page passport-page--endorsement" aria-label="Passport endorsement">
+            <div class="passport-edge" aria-hidden="true">
+              <span class="passport-stars--top"></span>
+              <span class="passport-stars--right"></span>
+              <span class="passport-stars--bottom"></span>
+              <span class="passport-stars--left"></span>
+            </div>
+            <div class="passport-back-signature">
+              <p>Holder’s signature</p>
+              <p class="passport-signature" id="back-signature">—</p>
+            </div>
+            <p class="passport-reverse-copy">Valid for the current academic session. If found, please return to the Learning Office.</p>
+            <div class="back-barcode" id="back-barcode" aria-hidden="true"></div>
+            <p class="passport-mrz" id="card-mrz" aria-hidden="true"></p>
+          </section>
         </div>
-
       </div>
     </div>
 
-    <button class="flip-btn" id="flip-btn" onclick="flipCard()">↩ Flip Card</button>
+    <button class="flip-btn" id="flip-btn" type="button">↩ Flip Card</button>
 
     <div style="text-align:center;">
       <p style="font-size:0.78rem;color:var(--text-muted);font-style:italic;max-width:260px;line-height:1.6;">
@@ -717,71 +917,209 @@
 </div>
 
 <!-- ===================== SUCCESS OVERLAY ===================== -->
-<div class="success-overlay" id="success-overlay">
+<div class="success-overlay" id="success-overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-title" aria-describedby="overlay-sub" hidden>
   <div class="success-card">
     <div style="font-size:2.8rem;margin-bottom:12px;animation:float 2s ease-in-out infinite;">🎉</div>
-    <h2>Welcome, <span id="overlay-name" class="gradient-text">Scholar</span>!</h2>
+    <h2 id="overlay-title" tabindex="-1">Welcome, <span id="overlay-name" class="gradient-text">Scholar</span>!</h2>
     <p id="overlay-sub">Your student passport has been issued. Happy learning!</p>
 
-    <!-- Large passport card in overlay -->
-    <div style="margin: 0 auto 40px; width:320px;">
-      <div class="passport-wrapper passport-large" id="overlay-passport">
-        <!-- Cloned card renders here via JS -->
-      </div>
-    </div>
+    <div class="passport-wrapper" id="overlay-passport"></div>
 
     <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
       <a href="../index.html" class="btn btn-primary btn-lg">🏠 Start Learning →</a>
-      <button class="btn btn-ghost btn-lg" onclick="closeOverlay()">✦ View My Card Again</button>
+      <button class="btn btn-ghost btn-lg" id="passport-close-overlay" type="button">✦ View My Card Again</button>
     </div>
   </div>
 </div>
 
 <!-- ===================== SCRIPTS ===================== -->
+<script src="../js/private-session.js"></script>
 <script src="../js/storage.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/passport-photo.js"></script>
 <script>
-
-  // ================================================================
-  // GENERATE STUDENT ID
-  // ================================================================
-  function generateStudentId() {
-    const year = new Date().getFullYear();
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    return `SG-${year}-${rand}`;
-  }
 
   // ================================================================
   // AVATAR OPTIONS
   // ================================================================
-  const AVATARS = ['🎓','📚','🦊','🦋','🌸','🌙','⭐','🎨','🔬','🌿','🦅','🧠','🌺','🪐','🎭'];
-  let selectedAvatar = '🎓';
+  const avatarGrid = document.getElementById('avatar-grid');
+  const avatarInputs = new Map();
+  const portraitInput = document.getElementById('passport-portrait');
+  const portraitRemove = document.getElementById('portrait-remove');
+  const portraitStatus = document.getElementById('portrait-status');
+  const signinButton = document.getElementById('signin-btn');
+  const accountPanel = document.getElementById('passport-account');
+  const accountForm = document.getElementById('passport-account-form');
+  const accountTitle = document.getElementById('passport-account-title');
+  const accountMode = document.getElementById('passport-account-mode');
+  const accountSubmit = document.getElementById('passport-account-submit');
+  const accountHint = document.getElementById('passport-account-hint');
+  const accountStatus = document.getElementById('passport-account-status');
+  const memberPanel = document.getElementById('passport-member');
+  const memberStatus = document.getElementById('passport-member-status');
+  const importPanel = document.getElementById('passport-import-panel');
+  const importButton = document.getElementById('passport-import');
+  const returnLink = document.getElementById('passport-return');
+  const signOut = document.getElementById('passport-sign-out');
+  const params = new URLSearchParams(window.location.search);
+  let registering = false;
+  let portrait = '';
+  let portraitRequest = 0;
 
-  function renderAvatarGrid() {
-    const grid = document.getElementById('avatar-grid');
-    grid.innerHTML = AVATARS.map(a => `
-      <button
-        type="button"
-        class="avatar-option ${a === selectedAvatar ? 'selected' : ''}"
-        onclick="selectAvatar('${a}', this)"
-        data-avatar="${a}"
-      >${a}</button>
-    `).join('');
+  function returnTarget() {
+    try {
+      const target = new URL(params.get('return') || '', window.location.origin);
+      if (params.has('return') && target.origin === window.location.origin &&
+          /^\/(?:index\.html|pages\/(?:study|lesson|quiz|diary|growth|pursuit|focus|explore|community|wisdom)\.html)?$/.test(target.pathname)) {
+        return target.pathname + target.search + target.hash;
+      }
+    } catch { /* Keep this page if the requested destination is malformed. */ }
+    return '';
   }
 
-  function selectAvatar(emoji, el) {
-    selectedAvatar = emoji;
-    document.querySelectorAll('.avatar-option').forEach(b => b.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('selected-avatar').value = emoji;
-    document.getElementById('card-avatar').textContent = emoji;
-    createSparkles(el.getBoundingClientRect().left + el.offsetWidth/2, el.getBoundingClientRect().top + el.offsetHeight/2, 8);
+  accountMode.addEventListener('click', () => {
+    registering = !registering;
+    accountTitle.textContent = registering ? 'Create a Studygram account' : 'Sign in to Studygram';
+    accountSubmit.textContent = registering ? 'Create account' : 'Sign in';
+    accountMode.textContent = registering ? 'I have an account' : 'Create an account';
+    accountForm.elements.password.value = '';
+    accountForm.elements.password.autocomplete = registering ? 'new-password' : 'current-password';
+    accountForm.elements.password.minLength = registering ? 15 : 0;
+    accountHint.hidden = !registering;
+    accountStatus.textContent = '';
+  });
+
+  accountForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (accountSubmit.disabled || !accountForm.reportValidity()) return;
+    const { username, password } = accountForm.elements;
+    accountSubmit.disabled = accountMode.disabled = true;
+    accountStatus.textContent = registering ? 'Creating your account…' : 'Signing in…';
+    try {
+      await StudygramPrivateSession.request(`/api/community/${registering ? 'register' : 'login'}`, 'POST', {
+        username: username.value.trim(), password: password.value,
+      });
+      password.value = '';
+      StudygramPrivateSession.sessionChanged(window.location.href);
+    } catch (error) {
+      accountStatus.textContent = error.status ? error.message : 'Studygram couldn’t sign you in. Try again.';
+      accountSubmit.disabled = accountMode.disabled = false;
+      password.focus();
+    }
+  });
+
+  signOut.addEventListener('click', async () => {
+    signOut.disabled = true;
+    try {
+      await Storage.flush().catch(() => {});
+      await StudygramPrivateSession.request('/api/community/logout', 'POST', {});
+      StudygramPrivateSession.sessionChanged('/pages/login.html');
+    } catch {
+      memberStatus.textContent = 'Studygram couldn’t sign you out. Try again.';
+      signOut.disabled = false;
+    }
+  });
+
+  importButton.addEventListener('click', async () => {
+    importButton.disabled = true;
+    try {
+      await StudygramPrivateSession.importLegacy();
+      importPanel.hidden = true;
+      memberStatus.textContent = 'Your browser records are now saved in your account.';
+      const profile = Storage.getStudentProfile();
+      if (profile) restorePassportProfile(profile);
+      renderNavProfile();
+    } catch (error) {
+      memberStatus.textContent = error.status ? error.message : 'Studygram couldn’t import your browser records. Try again.';
+      importButton.disabled = false;
+    }
+  });
+
+  function renderAvatarGrid(value) {
+    avatarGrid.replaceChildren(...PassportAvatars.map(avatar => {
+      const label = document.createElement('label');
+      label.className = 'avatar-option';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'avatar';
+      input.value = avatar.id;
+      avatarInputs.set(avatar.id, input);
+
+      const tile = document.createElement('span');
+      tile.className = 'avatar-tile';
+      const name = document.createElement('span');
+      name.className = 'avatar-name';
+      name.textContent = avatar.name;
+      tile.append(createPassportAvatar(avatar.id, 48, true), name);
+      label.append(input, tile);
+      return label;
+    }));
+    updatePassportAvatar(value);
   }
+
+  function updatePassportAvatar(value) {
+    const { id } = getPassportAvatar(value);
+    avatarInputs.get(id).checked = true;
+    document.getElementById('cover-avatar').replaceChildren(PassportPhoto.create(portrait, id, 'Student portrait', 144));
+    document.getElementById('card-avatar').replaceChildren(PassportPhoto.create(portrait, id, '', 72));
+    portraitRemove.hidden = !portrait;
+  }
+
+  function selectedPassportAvatar() {
+    return getPassportAvatar(avatarGrid.querySelector('input:checked')?.value).id;
+  }
+
+  portraitInput.addEventListener('change', async () => {
+    const file = portraitInput.files[0];
+    if (!file) return;
+    const request = ++portraitRequest;
+    signinButton.disabled = true;
+    portraitStatus.textContent = 'Preparing your photo…';
+    try {
+      const prepared = await PassportPhoto.read(file);
+      if (request !== portraitRequest) return;
+      portrait = prepared;
+      updatePassportAvatar(selectedPassportAvatar());
+      portraitStatus.textContent = 'Photo ready. Save your Passport to keep it.';
+    } catch (error) {
+      if (request !== portraitRequest) return;
+      portraitInput.value = '';
+      portraitStatus.textContent = error.message;
+    } finally {
+      if (request === portraitRequest) signinButton.disabled = false;
+    }
+  });
+
+  portraitRemove.addEventListener('click', () => {
+    ++portraitRequest;
+    portrait = '';
+    portraitInput.value = '';
+    signinButton.disabled = false;
+    updatePassportAvatar(selectedPassportAvatar());
+    portraitStatus.textContent = 'Pixel avatar shown. Save your Passport to keep this change.';
+    portraitInput.focus();
+  });
+
+  avatarGrid.addEventListener('change', async (event) => {
+    const { value } = event.target;
+    if (!avatarInputs.has(value)) return;
+    updatePassportAvatar(value);
+    const profile = Storage.getStudentProfile();
+    if (profile?.studentId === previewId && profile.avatar !== value) {
+      try {
+        Storage.saveStudentProfile({ ...profile, avatar: value });
+        await Storage.flush();
+        renderNavProfile();
+      } catch {
+        showToast('Your account couldn’t save the avatar. Try saving your Passport again.', 'error');
+      }
+    }
+  });
 
   // ================================================================
   // LIVE CARD PREVIEW — updates as you type
   // ================================================================
-  const previewId = generateStudentId(); // Generate once for the preview
+  let previewId = Storage.getStudentProfile()?.studentId || generateStudentId();
 
   function updateCardPreview() {
     const name   = document.getElementById('student-name').value.trim();
@@ -789,52 +1127,24 @@
     const year   = document.getElementById('student-year').value.trim();
     const stream = document.getElementById('student-stream').value;
 
-    // Name
-    const nameEl = document.getElementById('card-name');
-    if (name) {
-      nameEl.textContent = name.toUpperCase();
-      nameEl.classList.remove('placeholder');
-    } else {
-      nameEl.textContent = 'YOUR NAME';
-      nameEl.classList.add('placeholder');
-    }
-
-    // School
-    const schoolEl = document.getElementById('card-school');
-    if (school) {
-      schoolEl.textContent = school;
-      schoolEl.classList.remove('placeholder');
-    } else {
-      schoolEl.textContent = 'School';
-      schoolEl.classList.add('placeholder');
-    }
-
-    // Year
-    const yearEl = document.getElementById('card-year');
-    if (year) {
-      yearEl.textContent = year;
-      yearEl.classList.remove('placeholder');
-    } else {
-      yearEl.textContent = 'Year';
-      yearEl.classList.add('placeholder');
-    }
-
-    // Stream
-    const streamEl = document.getElementById('card-stream');
-    streamEl.textContent = stream;
-    streamEl.classList.remove('placeholder');
-
-    // Passport number
+    [
+      ['card-name', name, 'Your name'],
+      ['card-school', school, 'Your school'],
+      ['card-year', year, 'Your year'],
+      ['card-stream', stream, 'Your course'],
+    ].forEach(([id, value, fallback]) => {
+      const field = document.getElementById(id);
+      field.textContent = value || fallback;
+      field.classList.toggle('placeholder', !value);
+    });
     document.getElementById('card-id').textContent = previewId;
 
     // MRZ (machine-readable zone — decorative)
-    const safeName = (name || 'SCHOLAR').toUpperCase().replace(/[^A-Z]/g, '<');
-    const idClean  = previewId.replace(/-/g, '');
-    document.getElementById('card-mrz').innerHTML =
-      `P&lt;SGR&lt;&lt;${safeName.padEnd(24,'&lt;').slice(0,24)}&lt;&lt;&lt;&lt;&lt;<br/>` +
-      `${idClean}&lt;&lt;&lt;&lt;&lt;${new Date().getFullYear().toString().slice(2)}1025STUDYGRAM`;
+    const safeName = (name || 'SCHOLAR').toUpperCase().replace(/[^A-Z]/g, '<').slice(0, 24).padEnd(24, '<');
+    const idClean = previewId.replace(/[^A-Z0-9]/gi, '');
+    document.getElementById('card-mrz').textContent = `P<SGR<<${safeName}<<<<<\n${idClean}<<<<<STUDYGRAM`;
 
-    // Back side signature
+    document.getElementById('card-signature').textContent = name || '—';
     document.getElementById('back-signature').textContent = name || '—';
   }
 
@@ -851,6 +1161,8 @@
   function flipCard() {
     isFlipped = !isFlipped;
     document.getElementById('passport-inner').classList.toggle('flipped', isFlipped);
+    document.getElementById('passport-front').setAttribute('aria-hidden', String(isFlipped));
+    document.getElementById('passport-back').setAttribute('aria-hidden', String(!isFlipped));
     document.getElementById('flip-btn').textContent = isFlipped ? '↩ Show Front' : '↩ Flip Card';
   }
 
@@ -861,9 +1173,11 @@
   const SPARKLE_COLORS = ['#C9A96E','#9B8EC4','#B97A78','#7A9E8E','#D4B896','#8B7355','#C4B0D8'];
 
   function createSparkles(x, y, count = 24) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     for (let i = 0; i < count; i++) {
       const el = document.createElement('span');
       el.className = 'sparkle-particle';
+      el.setAttribute('aria-hidden', 'true');
       el.textContent = SPARKLE_CHARS[Math.floor(Math.random() * SPARKLE_CHARS.length)];
 
       const size     = 9 + Math.random() * 14;
@@ -932,19 +1246,43 @@
   // ================================================================
   document.getElementById('signin-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (signinButton.disabled) return;
 
-    const btn    = document.getElementById('signin-btn');
+    const btn    = signinButton;
     const name   = document.getElementById('student-name').value.trim();
     const school = document.getElementById('student-school').value.trim();
     const year   = document.getElementById('student-year').value.trim();
     const stream = document.getElementById('student-stream').value;
-    const avatar = selectedAvatar;
+    const avatar = selectedPassportAvatar();
 
     if (!name || !school || !year) {
       showToast('Please fill in all fields to get your passport ✦', 'warning');
       createSparkles(btn.getBoundingClientRect().left + btn.offsetWidth/2, btn.getBoundingClientRect().top, 12);
       return;
     }
+
+    const saved = Storage.getStudentProfile();
+    const studentId = saved?.studentId || previewId;
+    const profile = {
+      ...(saved?.studentId === studentId ? saved : {}),
+      name, school, year, stream, avatar, studentId,
+    };
+    if (portrait) profile.portrait = portrait;
+    else delete profile.portrait;
+    btn.disabled = true;
+    try {
+      Storage.saveStudentProfile(profile);
+      await Storage.flush();
+    } catch (error) {
+      showToast(error.status ? error.message : 'Your account couldn’t save the Passport. Try again.', 'error');
+      return;
+    } finally {
+      btn.disabled = false;
+    }
+    previewId = studentId;
+    updateCardPreview();
+    renderNavProfile();
+    portraitStatus.textContent = portrait ? 'Saved with your Passport.' : '';
 
     // Button pop animation
     btn.classList.add('clicked');
@@ -961,18 +1299,17 @@
     setTimeout(() => createSparkles(bx, by, 15), 300);
     setTimeout(() => createSparkles(window.innerWidth/2, window.innerHeight/2, 25), 550);
 
-    // Save profile
-    const studentId = previewId;
-    const profile = { name, school, year, stream, avatar, studentId };
-    Storage.saveStudentProfile(profile);
-
-    // Show success overlay after sparkle settles
-    setTimeout(() => showSuccessOverlay(profile), 600);
+    showSuccessOverlay(profile);
   });
 
   // ================================================================
   // SUCCESS OVERLAY
   // ================================================================
+  const overlay = document.getElementById('success-overlay');
+  const passportPage = document.querySelector('.login-layout');
+  const passportNavigation = document.querySelector('.navbar');
+  let overlayReturnFocus;
+
   function showSuccessOverlay(profile) {
     document.getElementById('overlay-name').textContent = profile.name.split(' ')[0];
     document.getElementById('overlay-sub').textContent =
@@ -981,11 +1318,22 @@
     // Clone the passport card HTML into the overlay
     const original = document.getElementById('passport-wrapper');
     const overlaySlot = document.getElementById('overlay-passport');
-    overlaySlot.innerHTML = original.innerHTML;
+    const card = original.firstElementChild.cloneNode(true);
+    card.classList.remove('flipped');
+    card.querySelector('.passport-front').removeAttribute('aria-hidden');
+    card.querySelector('.passport-back').setAttribute('aria-hidden', 'true');
+    card.removeAttribute('id');
+    card.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+    overlaySlot.replaceChildren(card);
 
     // Show overlay
-    const overlay = document.getElementById('success-overlay');
+    overlayReturnFocus = document.activeElement;
+    overlay.hidden = false;
     overlay.classList.add('active');
+    overlay.scrollTop = 0;
+    memberPanel.inert = passportPage.inert = passportNavigation.inert = true;
+    document.body.classList.add('passport-modal-open');
+    document.getElementById('overlay-title').focus({ preventScroll: true });
 
     // Confetti burst from centre
     setTimeout(() => createSparkles(window.innerWidth/2, window.innerHeight/3, 40), 400);
@@ -994,8 +1342,23 @@
   }
 
   function closeOverlay() {
-    document.getElementById('success-overlay').classList.remove('active');
+    overlay.classList.remove('active');
+    overlay.hidden = true;
+    memberPanel.inert = passportPage.inert = passportNavigation.inert = false;
+    document.body.classList.remove('passport-modal-open');
+    overlayReturnFocus?.focus();
   }
+
+  overlay.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeOverlay();
+    if (event.key !== 'Tab') return;
+    const first = overlay.querySelector('a');
+    const last = overlay.querySelector('button');
+    const edge = event.shiftKey ? first : last;
+    if (document.activeElement !== edge && document.activeElement !== document.getElementById('overlay-title')) return;
+    event.preventDefault();
+    (event.shiftKey ? last : first).focus();
+  });
 
   // ================================================================
   // LOAD EXISTING PROFILE
@@ -1008,41 +1371,67 @@
       return;
     }
 
-    // Fill form with saved data
-    document.getElementById('student-name').value   = profile.name   || '';
-    document.getElementById('student-school').value = profile.school || '';
-    document.getElementById('student-year').value   = profile.year   || '';
-    document.getElementById('student-stream').value = profile.stream || 'Science';
-    selectedAvatar = profile.avatar || '🎓';
-
-    // Re-render avatar grid with correct selection
-    renderAvatarGrid();
-    document.getElementById('card-avatar').textContent = selectedAvatar;
-    updateCardPreview();
+    restorePassportProfile(profile);
     showSuccessOverlay(profile);
     createSparkles(window.innerWidth/2, window.innerHeight/2, 30);
+  }
+
+  function restorePassportProfile(profile) {
+    document.getElementById('student-name').value = profile.name || '';
+    document.getElementById('student-school').value = profile.school || '';
+    document.getElementById('student-year').value = profile.year || '';
+    document.getElementById('student-stream').value = profile.stream || 'Science';
+    previewId = profile.studentId || previewId;
+    ++portraitRequest;
+    portrait = profile.portrait || '';
+    portraitInput.value = '';
+    signinButton.disabled = false;
+    portraitStatus.textContent = portrait ? 'Saved with your Passport.' : '';
+    updatePassportAvatar(profile.avatar);
+    updateCardPreview();
   }
 
   // ================================================================
   // INIT
   // ================================================================
-  document.addEventListener('DOMContentLoaded', () => {
-    renderAvatarGrid();
-    renderBarcode();
-    updateCardPreview();
+  document.getElementById('flip-btn').addEventListener('click', flipCard);
+  document.getElementById('passport-close-overlay').addEventListener('click', closeOverlay);
+  document.getElementById('passport-view-existing').addEventListener('click', loadExistingProfile);
 
-    // If already signed in, pre-fill form
+  StudygramPrivateSession.start(() => {
+    const user = StudygramPrivateSession.user();
+    if (!user) {
+      accountForm.hidden = false;
+      accountStatus.textContent = StudygramPrivateSession.unavailable() ? 'Studygram couldn’t check your session. Try signing in.' : '';
+      return;
+    }
+    const target = returnTarget();
+    const hasLegacy = StudygramPrivateSession.hasLegacy();
+    if (target && !hasLegacy) {
+      window.location.replace(target);
+      return;
+    }
+    if (target) {
+      returnLink.href = target;
+      returnLink.hidden = false;
+    }
+    accountPanel.hidden = true;
+    memberPanel.hidden = false;
+    passportPage.hidden = false;
+    importPanel.hidden = !hasLegacy;
+    document.getElementById('passport-member-name').textContent = user.username;
     const existing = Storage.getStudentProfile();
+    renderAvatarGrid(existing?.avatar);
+    renderBarcode();
     if (existing) {
-      document.getElementById('student-name').value   = existing.name   || '';
-      document.getElementById('student-school').value = existing.school || '';
-      document.getElementById('student-year').value   = existing.year   || '';
-      if (existing.stream) document.getElementById('student-stream').value = existing.stream;
-      selectedAvatar = existing.avatar || '🎓';
-      renderAvatarGrid();
-      document.getElementById('card-avatar').textContent = selectedAvatar;
+      restorePassportProfile(existing);
+      if (new URLSearchParams(window.location.search).get('view') === 'passport') {
+        showSuccessOverlay(existing);
+      } else {
+        showToast(`Welcome back, ${existing.name.split(' ')[0]}! ✦ Your passport is ready.`, 'success', 4000);
+      }
+    } else {
       updateCardPreview();
-      showToast(`Welcome back, ${existing.name.split(' ')[0]}! ✦ Your passport is ready.`, 'success', 4000);
     }
   });
 

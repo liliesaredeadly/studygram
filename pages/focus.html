@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Set a study timer or play a short recall game." />
+  <title>Focus &amp; Fun — Studygram</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
+  <link rel="stylesheet" href="../style.css" />
+  <script defer src="../js/private-session.js"></script>
+  <script defer src="../js/storage.js"></script>
+  <script defer src="../js/sample-study.js"></script>
+  <script defer src="../js/focus-timer.js"></script>
+  <script defer src="../js/focus-game.js"></script>
+  <script defer src="../js/quiz-order.js"></script>
+  <script defer src="../js/focus.js"></script>
+</head>
+<body inert class="focus-page">
+  <header class="focus-header container">
+    <a class="navbar-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+      <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+      <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
+    </a>
+    <a id="focus-return" class="btn btn-secondary btn-sm" href="../index.html">Back to Home</a>
+  </header>
+
+  <main class="container focus-main">
+    <h1>Focus &amp; Fun</h1>
+    <p>Make time to study, then see what you remember. Start with either activity.</p>
+
+    <div class="focus-grid">
+      <section class="card focus-panel" aria-labelledby="focus-sprint-title">
+        <h2 id="focus-sprint-title">Focus Sprint</h2>
+        <a href="growth.html#growth-sprint" class="btn btn-ghost btn-sm">Try a writing sprint</a>
+        <p>Pick one thing to work on, like reviewing a page of notes.</p>
+        <div class="focus-clock" role="timer" aria-label="Time remaining" id="focus-clock">10:00</div>
+        <div id="focus-presets" class="focus-controls" role="group" aria-label="Sprint duration">
+          <button class="btn btn-secondary" type="button" data-minutes="5" aria-pressed="false">5 min</button>
+          <button class="btn btn-secondary" type="button" data-minutes="10" aria-pressed="true">10 min</button>
+          <button class="btn btn-secondary" type="button" data-minutes="25" aria-pressed="false">25 min</button>
+        </div>
+        <div class="focus-controls">
+          <button class="btn btn-primary" type="button" id="focus-timer-action">Start</button>
+          <button class="btn btn-secondary" type="button" id="focus-reset" disabled>Reset</button>
+        </div>
+        <p id="focus-timer-status" role="status"></p>
+      </section>
+
+      <section class="card focus-panel" aria-labelledby="quick-play-title">
+        <h2 id="quick-play-title">Quick Play</h2>
+        <p>Try up to three questions. Take as much time as you need.</p>
+        <label for="focus-source" class="focus-source-label">Question set</label>
+        <select id="focus-source" class="form-select"></select>
+        <p id="focus-source-note" hidden></p>
+        <div id="focus-round">
+          <p id="focus-card-count" class="focus-card-count"></p>
+          <h3 id="focus-question" tabindex="-1"></h3>
+          <div id="focus-options" class="focus-options"></div>
+          <p id="focus-feedback" class="focus-feedback" hidden></p>
+          <button class="btn btn-primary" type="button" id="focus-next" hidden>Next</button>
+        </div>
+        <div id="focus-result" hidden>
+          <h3 id="focus-score" tabindex="-1"></h3>
+          <button class="btn btn-primary" type="button" id="focus-replay">Play again</button>
+        </div>
+      </section>
+    </div>
+    <noscript><p>Enable JavaScript to use the timer and play a round.</p></noscript>
+  </main>
+</body>
+</html>
