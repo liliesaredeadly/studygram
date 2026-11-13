@@ -98,6 +98,13 @@ function handleAPIError(error, containerEl, retry = () => location.reload()) {
       </div>`;
     containerEl.querySelector("p").textContent = message;
     containerEl.querySelector("button").addEventListener("click", retry);
+    if (error.code?.startsWith("META_")) {
+      const settings = document.createElement("a");
+      settings.href = "/pages/settings.html";
+      settings.className = "btn btn-secondary btn-sm";
+      settings.textContent = "Open AI settings";
+      containerEl.querySelector(".completion-card").append(settings);
+    }
   }
   showToast(message, "error");
 }
@@ -349,7 +356,8 @@ function renderNavProfilePreview(panel, profile, home, pages) {
     roomList.append(item);
   }
   chats.append(roomList);
-  panel.replaceChildren(passport, rewards, achievements, saved, chats);
+  const settings = profilePreviewLink(`${pages}settings.html`, 'Settings · Meta API connection', 'nav-profile-more');
+  panel.replaceChildren(passport, settings, rewards, achievements, saved, chats);
 }
 
 function renderNavProfile() {
@@ -418,7 +426,7 @@ function dismissNavProfile(event) {
 }
 
 function renderWorldNavigation() {
-  const nav = document.querySelector('.indie-nav, .academy .navbar, .diary-page .navbar, .explore-page .navbar, .growth-page .navbar, .wisdom-page .navbar');
+  const nav = document.querySelector('.indie-nav, .academy .navbar, .diary-page .navbar, .explore-page .navbar, .growth-page .navbar, .wisdom-page .navbar, .settings-page .navbar');
   if (!nav) return;
   nav.classList.add('world-navigation');
   const labels = { 'lesson.html': 'Learn', 'quiz.html': 'Quiz', 'diary.html': 'Diary', 'explore.html': 'Explore', 'study.html': 'New set', 'growth.html': 'Growth' };
@@ -434,9 +442,20 @@ function renderWorldNavigation() {
   }
 }
 
+function renderSettingsNavigation() {
+  const list = document.querySelector('.navbar-links');
+  if (!list || list.querySelector('[data-settings-link]')) return;
+  const link = document.createElement('a');
+  link.href = '/pages/settings.html';
+  link.textContent = 'Settings';
+  link.dataset.settingsLink = '';
+  list.append(link);
+}
+
 // ---- Run on every page load ----
 document.addEventListener("DOMContentLoaded", async () => {
   renderWorldNavigation();
+  renderSettingsNavigation();
   if (typeof StudygramPrivateSession !== 'undefined') await StudygramPrivateSession.ready;
   renderNavProfile();
   if (document.getElementById('nav-profile-panel') && typeof BroadcastChannel === 'function') {

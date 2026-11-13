@@ -970,7 +970,7 @@
     try {
       const target = new URL(params.get('return') || '', window.location.origin);
       if (params.has('return') && target.origin === window.location.origin &&
-          /^\/(?:index\.html|pages\/(?:study|lesson|quiz|diary|growth|pursuit|focus|explore|community|wisdom)\.html)?$/.test(target.pathname)) {
+          /^\/(?:index\.html|pages\/(?:study|lesson|quiz|diary|growth|pursuit|focus|explore|community|wisdom|settings)\.html)?$/.test(target.pathname)) {
         return target.pathname + target.search + target.hash;
       }
     } catch { /* Keep this page if the requested destination is malformed. */ }

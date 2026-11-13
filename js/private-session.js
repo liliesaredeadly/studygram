@@ -31,13 +31,21 @@ const StudygramPrivateSession = (() => {
     document.documentElement.style.visibility = "hidden";
   }
 
+  function clearAIConnection() {
+    if (typeof StudygramMetaConnection !== "undefined") StudygramMetaConnection.disconnect();
+    else {
+      try { window.sessionStorage.removeItem("sg_meta_connection_v1"); } catch { /* No readable key remains available. */ }
+    }
+  }
+
   function signInURL() {
     const target = window.location.pathname + window.location.search + window.location.hash;
     return `/pages/login.html?return=${encodeURIComponent(target)}`;
   }
 
-  function reload() {
+  function reload(clearConnection = true) {
     if (leaving) return;
+    if (clearConnection) clearAIConnection();
     leaving = true;
     pending.clear();
     clearTimeout(saveTimer);
@@ -53,12 +61,42 @@ const StudygramPrivateSession = (() => {
     for (const [key, record] of Object.entries(result.data)) data.set(key, record);
   }
 
+  function showSessionRecovery() {
+    const render = () => {
+      // Keep forms inactive until their account data has actually loaded.
+      for (const child of document.body.children) child.inert = true;
+      const panel = document.createElement("section");
+      panel.className = "container card";
+      panel.setAttribute("role", "alert");
+      const heading = document.createElement("h1");
+      heading.textContent = "Studygram couldn’t connect";
+      const message = document.createElement("p");
+      message.textContent = "We couldn’t check your session. Retry to load this page; you don’t need to sign in again unless your session has ended.";
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "btn btn-primary";
+      retry.textContent = "Retry";
+      retry.addEventListener("click", () => {
+        retry.disabled = true;
+        window.location.reload();
+      });
+      panel.append(heading, message, retry);
+      document.body.append(panel);
+      document.body.removeAttribute("inert");
+      retry.focus();
+    };
+    if (document.body) render();
+    else document.addEventListener("DOMContentLoaded", render, { once: true });
+  }
+
   const ready = request(statePath).then(result => {
     if (leaving) return;
     user = result.user;
     setData(result);
   }).catch(() => { unavailable = true; }).then(() => {
-    if (needsAccount && !user && !leaving) {
+    if (unavailable && !leaving) {
+      showSessionRecovery();
+    } else if (needsAccount && !user && !leaving) {
       leaving = true;
       window.location.replace(signInURL());
     } else if (needsAccount && !leaving) {
@@ -70,6 +108,8 @@ const StudygramPrivateSession = (() => {
   function requireAccount() {
     if (leaving) return false;
     if (user) return true;
+    if (unavailable) return false;
+    leaving = true;
     window.location.assign(signInURL());
     return false;
   }
@@ -167,6 +207,7 @@ const StudygramPrivateSession = (() => {
   }
 
   function sessionChanged(destination) {
+    clearAIConnection();
     leaving = true;
     hidePage();
     channel?.postMessage("session-changed");
@@ -196,13 +237,13 @@ const StudygramPrivateSession = (() => {
     if (!leaving && (pending.size || worker)) event.preventDefault();
   });
   window.addEventListener("pagehide", () => { if (user) hidePage(); });
-  window.addEventListener("pageshow", event => { if (event.persisted) reload(); });
+  window.addEventListener("pageshow", event => { if (event.persisted) reload(false); });
 
   return {
     ready, get, set, flush, request, requireAccount, signInURL, sessionChanged, importLegacy,
     user: () => user,
     unavailable: () => unavailable,
     hasLegacy: () => Boolean(user && legacyEntries().length),
-    start: callback => ready.then(() => { if (!leaving) callback(); }),
+    start: callback => ready.then(() => { if (!leaving && !unavailable) callback(); }),
   };
 })();

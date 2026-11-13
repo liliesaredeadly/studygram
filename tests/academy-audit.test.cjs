@@ -182,6 +182,40 @@ test("diary dictation retries silence and finishes the current phrase on Stop", 
   assert.equal(run("isRecording"), false);
 });
 
+test("diary reports an unresponsive speech service instead of listening forever", () => {
+  const document = mockDocument();
+  const { run, advance } = mockDiarySpeech(document);
+  run("startVoice(); recognition.onstart();");
+  advance();
+  assert.equal(run("isRecording"), false);
+  assert.match(document.getElementById("voice-status").textContent, /No words detected/);
+  assert.match(document.getElementById("voice-status").textContent, /microphone/);
+});
+
+test("diary distinguishes network failure from a microphone that hears no speech", () => {
+  const document = mockDocument();
+  const { run, advance } = mockDiarySpeech(document);
+  run("startVoice();");
+  for (let i = 0; i < 4; i++) {
+    run('recognition.onerror({ error: "network" });');
+    advance();
+  }
+  assert.equal(run("isRecording"), false);
+  assert.match(document.getElementById("voice-status").textContent, /speech service/);
+  assert.match(document.getElementById("voice-status").textContent, /Chrome or Edge/);
+});
+
+test("diary reconnect keeps the last visible phrase even if it was not finalized", () => {
+  const document = mockDocument();
+  const { run, advance } = mockDiarySpeech(document);
+  run(`startVoice();
+    recognition.onresult({ results: [{ 0: { transcript: "Studied fractions" }, isFinal: false }] });
+    recognition.onend();`);
+  advance();
+  run('recognition.onresult({ results: [{ 0: { transcript: "then algebra" }, isFinal: true }] });');
+  assert.equal(document.getElementById("diary-input").value, "Studied fractions then algebra");
+});
+
 test("a diary draft is only saved after approval and uses the student's edits", async () => {
   const document = mockDocument();
   const saved = [];
@@ -319,6 +353,31 @@ test("a ready MP4 preserves an open storyboard until the student plays the video
   video.onplay();
   assert.deepEqual(shown, [false, true, false]);
   assert.equal(pauses, 0);
+});
+
+test("study set form sends only one request while generation is pending", async () => {
+  const document = mockDocument();
+  let submit;
+  let calls = 0;
+  let failGeneration;
+  document.getElementById("study-form").addEventListener = (event, handler) => {
+    if (event === "submit") submit = handler;
+  };
+  loadScript("study", {
+    document, URLSearchParams,
+    window: { location: { search: "" } },
+    Storage: { getTopicById: () => null },
+    StudygramPrivateSession: { start: setup => setup() },
+    generateStudySet: () => { calls++; return new Promise((_resolve, reject) => { failGeneration = reject; }); },
+  });
+  document.getElementById("study-topic").value = "Fractions";
+  const pending = submit({ preventDefault() {} });
+  const duplicate = submit({ preventDefault() {} });
+  assert.equal(calls, 1);
+  failGeneration(new Error("Try again"));
+  await Promise.all([pending, duplicate]);
+  assert.equal(document.getElementById("study-create").disabled, false);
+  assert.equal(document.getElementById("study-topic").value, "Fractions");
 });
 
 test("study-note uploads reject mislabeled binary files and accept ordinary text", async () => {

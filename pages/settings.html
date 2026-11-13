@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Connect your own Meta API key to Studygram.">
+  <title>Settings · Studygram</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/studygram-mark.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../settings.css">
+  <script defer src="../js/private-session.js"></script>
+  <script defer src="../js/storage.js"></script>
+  <script defer src="../js/ai.js"></script>
+  <script defer src="../js/app.js"></script>
+  <script defer src="../js/settings.js"></script>
+</head>
+<body class="settings-page">
+  <a class="settings-skip" href="#settings-content">Skip to settings</a>
+  <header>
+    <nav class="navbar" aria-label="Studygram">
+      <a class="navbar-brand studygram-brand" href="../index.html" aria-label="Studygram home">
+        <img src="../assets/studygram-mark.svg" alt="" width="30" height="30">
+        <span>studygram<span class="studygram-brand-dot" aria-hidden="true">.</span></span>
+      </a>
+      <div class="navbar-links">
+        <a href="../index.html">Home</a>
+        <a href="study.html">New set</a>
+        <a href="explore.html">Explore</a>
+        <a href="growth.html">Growth</a>
+        <a href="settings.html" data-settings-link aria-current="page" class="active">Settings</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="settings-shell" id="settings-content" tabindex="-1">
+    <header class="settings-heading">
+      <p class="settings-eyebrow">Your Studygram</p>
+      <h1>Settings<span aria-hidden="true">.</span></h1>
+      <p>A personal connection for the way you learn.</p>
+    </header>
+
+    <section class="settings-panel" aria-labelledby="meta-title">
+      <div class="settings-panel-heading">
+        <div>
+          <p class="settings-eyebrow">AI connection</p>
+          <h2 id="meta-title">Connect to Meta AI</h2>
+        </div>
+        <span id="meta-badge" class="connection-badge" data-connected="false">Checking…</span>
+      </div>
+      <p class="settings-intro">Use your own Meta API key for Lily, custom lessons, quizzes, and writing help. AI usage is charged to your Meta project.</p>
+
+      <div id="meta-availability" class="settings-notice" role="status">Checking whether Meta AI is available…</div>
+      <div id="meta-sign-in" class="settings-notice" hidden>
+        <p>Sign in to connect a key for your Studygram account.</p>
+        <a class="btn btn-secondary btn-sm" href="login.html?return=%2Fpages%2Fsettings.html">Sign in to Studygram</a>
+      </div>
+
+      <div id="meta-connected" class="connected-summary" hidden>
+        <div class="connected-mark" aria-hidden="true">✓</div>
+        <div>
+          <h3>Your key is connected</h3>
+          <p id="meta-connected-model"></p>
+          <p>Ready for this account in this browser tab.</p>
+        </div>
+        <div class="connection-actions">
+          <button id="meta-replace" class="btn btn-secondary btn-sm" type="button">Replace key</button>
+          <button id="meta-disconnect" class="btn btn-ghost btn-sm" type="button">Disconnect</button>
+        </div>
+      </div>
+
+      <form id="meta-form" class="settings-form" novalidate hidden>
+        <div class="settings-field">
+          <label for="meta-key">Meta API key</label>
+          <div class="secret-field">
+            <input id="meta-key" name="meta-key" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false" maxlength="2048" aria-describedby="meta-key-help meta-key-error" required>
+            <button id="meta-key-toggle" type="button" aria-label="Show API key" aria-pressed="false">Show</button>
+          </div>
+          <p id="meta-key-help" class="settings-help">Create a project key in the <a href="https://dev.meta.ai/" target="_blank" rel="noopener noreferrer">Meta developer dashboard ↗</a>, then paste it here.</p>
+          <p id="meta-key-error" class="settings-error" aria-live="polite"></p>
+        </div>
+        <div class="settings-field">
+          <label class="settings-check" for="meta-adult">
+            <input id="meta-adult" type="checkbox" aria-describedby="meta-adult-help meta-adult-error">
+            <span>I am 18 or older.</span>
+          </label>
+          <p id="meta-adult-help" class="settings-help">Meta’s hosted API is available here for adult use. <a href="https://dev.meta.ai/legal/terms-of-service" target="_blank" rel="noopener noreferrer">Read Meta’s terms ↗</a></p>
+          <p id="meta-adult-error" class="settings-error" aria-live="polite"></p>
+        </div>
+        <div class="settings-form-actions">
+          <button id="meta-connect" class="btn btn-primary" type="submit">Connect key</button>
+          <button id="meta-cancel" class="btn btn-ghost" type="button" hidden>Cancel</button>
+        </div>
+      </form>
+      <p id="meta-status" class="settings-status" role="status" aria-live="polite"></p>
+
+      <div class="settings-footnote">
+        <h3>Your key, your connection</h3>
+        <p>Your key stays in this browser tab’s session and is sent through Studygram to Meta when you use AI. It is cleared when you disconnect, sign out, or change accounts. Closing the tab ends the session; a browser’s restore-session feature may restore tab storage.</p>
+        <p>Connecting checks your key and model access without generating a reply. Meta checks billing and generation access when you use AI. The K-map sample and other offline activities work without a key.</p>
+      </div>
+    </section>
+    <a class="settings-back" href="../index.html">← Back to Studygram</a>
+  </main>
+</body>
+</html>

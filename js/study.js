@@ -143,6 +143,7 @@ StudygramPrivateSession.start(() => {
 
   studyForm.addEventListener("submit", async event => {
     event.preventDefault();
+    if (studyCreate.disabled) return;
     const name = studyTopic.value.trim();
     if (!name) {
       studyStatus.textContent = "Enter a topic to get started.";

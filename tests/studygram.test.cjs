@@ -9,22 +9,18 @@ function sampleContent() {
 
 test("Meta errors distinguish a rejected key, billing, and Windows certificate trust", async t => {
   const { generateText } = require("../server/model");
-  const originalKey = process.env.MODEL_API_KEY;
   const originalMode = process.env.STUDYGRAM_ADULT_DEMO;
   t.after(() => {
-    if (originalKey === undefined) delete process.env.MODEL_API_KEY;
-    else process.env.MODEL_API_KEY = originalKey;
     if (originalMode === undefined) delete process.env.STUDYGRAM_ADULT_DEMO;
     else process.env.STUDYGRAM_ADULT_DEMO = originalMode;
   });
-  process.env.MODEL_API_KEY = "test-only-key";
   process.env.STUDYGRAM_ADULT_DEMO = "1";
   let status = 401;
   t.mock.method(globalThis, "fetch", async () => {
     if (status) return new Response(null, { status });
     throw new TypeError("fetch failed", { cause: { code: "UNABLE_TO_VERIFY_LEAF_SIGNATURE" } });
   });
-  const input = { instructions: "Generate a lesson", input: { name: "K-maps" } };
+  const input = { instructions: "Generate a lesson", input: { name: "K-maps" }, apiKey: "test-only-key" };
   await assert.rejects(generateText(input), /rejected.*key/i);
   status = 402;
   await assert.rejects(generateText(input), /billing/i);
@@ -55,12 +51,12 @@ test("Meta requests require demo mode and send the key only in the server header
     assert.doesNotMatch(options.body, /test-only-key/);
     return new Response(JSON.stringify({ choices: [{ message: { content: "test reply" } }] }));
   });
-  const input = { instructions: "Generate a lesson", input: { name: "K-maps" } };
+  const input = { instructions: "Generate a lesson", input: { name: "K-maps" }, apiKey: "test-only-key" };
   await assert.rejects(generateText(input), { status: 503, message: /turned off on this server/i });
   assert.equal(fetchMock.mock.callCount(), 0);
   process.env.STUDYGRAM_ADULT_DEMO = "1";
   delete process.env.MODEL_API_KEY;
-  await assert.rejects(generateText(input), { status: 503, message: /needs a Meta API key/i });
+  await assert.rejects(generateText({ ...input, apiKey: undefined }), { status: 428, code: "META_CONNECTION_REQUIRED" });
   assert.equal(fetchMock.mock.callCount(), 0);
   process.env.MODEL_API_KEY = "test-only-key";
   assert.equal(await generateText(input), "test reply");
@@ -82,7 +78,11 @@ test("new and legacy study sets keep stable IDs and source notes", () => {
 
 test("a topic opened directly gets a study-set ID and reuses its generated quiz", async () => {
   const context = vm.createContext({
-    window: { location: { protocol: "http:" } },
+    window: {
+      location: { protocol: "http:" },
+      sessionStorage: { getItem: () => JSON.stringify({ accountId: 7, apiKey: "test-only-key", adult: true, model: "test-model" }) },
+    },
+    StudygramPrivateSession: { ready: Promise.resolve(), user: () => ({ id: 7 }) },
     fetch: async () => new Response(JSON.stringify(sampleContent())),
     AbortSignal,
     Storage: { saveStudySet: topic => ({ ...topic, id: 77 }) },

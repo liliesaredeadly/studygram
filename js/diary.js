@@ -9,6 +9,7 @@ let recognition;
 let isRecording = false;
 let finishingVoice = false;
 let voiceTimer;
+let voiceWatchdog;
 let voiceRetries = 0;
 let voiceDraft = "";
 let finalizedDraft = "";
@@ -90,13 +91,17 @@ function startVoice() {
   beginRecognition();
 }
 
-function restartRecognition() {
+function restartRecognition(error = "no-speech") {
+  clearTimeout(voiceWatchdog);
   if (voiceRetries >= voiceRetryDelays.length) {
-    stopVoice("Dictation paused. Select Speak to try again or keep typing.");
+    stopVoice(error === "network"
+      ? "The browser’s speech service could not connect. Check your internet connection, or open Studygram in Chrome or Edge and try Speak again."
+      : "No words detected. Check that your microphone is working and selected as your input device, then try Speak again.");
     return;
   }
-  // Keep committed words across sessions. The last interim words stay visible until replaced.
-  voiceDraft = finalizedDraft;
+  // Once a session ends, preserve its last visible hypothesis for the student to edit.
+  voiceDraft = document.getElementById("diary-input").value.trimEnd();
+  finalizedDraft = voiceDraft;
   document.getElementById("voice-status").textContent = "Reconnecting microphone…";
   voiceTimer = setTimeout(beginRecognition, voiceRetryDelays[voiceRetries++]);
 }
@@ -106,11 +111,19 @@ function beginRecognition() {
   try {
     const run = new DiaryRecognition();
     recognition = run;
+    voiceWatchdog = setTimeout(() => {
+      if (recognition === run) stopVoice("The speech service did not start. Try Speak again, or open Studygram in Chrome or Edge.");
+    }, 12000);
     run.continuous = true;
     run.interimResults = true;
     run.lang = "en-IN";
     run.onstart = () => {
-      if (recognition === run && !finishingVoice) document.getElementById("voice-status").textContent = "Listening…";
+      if (recognition !== run || finishingVoice) return;
+      clearTimeout(voiceWatchdog);
+      document.getElementById("voice-status").textContent = "Listening… Speak in English.";
+      voiceWatchdog = setTimeout(() => {
+        if (recognition === run) stopVoice("No words detected. Check your microphone input and internet connection, or try Studygram in Chrome or Edge.");
+      }, 15000);
     };
     run.onresult = ({ results }) => {
       if (recognition !== run) return;
@@ -120,7 +133,10 @@ function beginRecognition() {
         const transcript = result[0]?.transcript.trim();
         if (transcript) (result.isFinal ? final : interim).push(transcript);
       }
-      if (final.length || interim.length) voiceRetries = 0;
+      if (final.length || interim.length) {
+        clearTimeout(voiceWatchdog);
+        voiceRetries = 0;
+      }
       finalizedDraft = [voiceDraft, ...final].filter(Boolean).join(" ");
       document.getElementById("diary-input").value = [finalizedDraft, ...interim].filter(Boolean).join(" ");
     };
@@ -128,13 +144,16 @@ function beginRecognition() {
       if (recognition !== run) return;
       if (!finishingVoice && (error === "no-speech" || error === "network")) {
         recognition = null;
-        restartRecognition();
+        try { run.abort(); } catch { /* Release the old session before retrying. */ }
+        restartRecognition(error);
       } else if (finishingVoice) {
         stopVoice();
       } else {
         const messages = {
           "not-allowed": "Allow microphone access in your browser, then try again.",
           "audio-capture": "No microphone is available. Check your input device and try again.",
+          "service-not-allowed": "This browser cannot use its speech service. Open Studygram in Chrome or Edge and allow microphone access there.",
+          "language-not-supported": "This browser’s speech service does not support English (India). Try Studygram in Chrome or Edge.",
         };
         stopVoice(messages[error] || "Dictation stopped. Select Speak to retry or keep typing.");
       }
@@ -153,6 +172,7 @@ function beginRecognition() {
 
 function stopVoice(message = "Voice stopped. You can edit the text above.") {
   clearTimeout(voiceTimer);
+  clearTimeout(voiceWatchdog);
   const run = recognition;
   recognition = null;
   isRecording = false;

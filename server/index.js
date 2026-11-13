@@ -4,7 +4,7 @@ const { randomBytes } = require("node:crypto");
 const { readFileSync } = require("node:fs");
 const { readFile } = require("node:fs/promises");
 const { resolve } = require("node:path");
-const { generateText } = require("./model");
+const { generateText, verifyMetaConnection, getMetaConnection, validateMetaKey, metaError, publicMetaError } = require("./model");
 const { tasks } = require("./tasks");
 const { createReelJobs, JOB_ROUTE } = require("./reel-jobs");
 const { getWisdomResponse } = require("./wisdom");
@@ -13,7 +13,7 @@ const { createEventFeed } = require("./events");
 const { createCommunityHandler } = require("./community");
 
 const root = resolve(__dirname, "..");
-const staticFile = /^\/(?:index\.html|(?:style|brand|wisdom|explore|growth|pursuit|academy|community)\.css|pages\/[a-z-]+\.html|js\/[a-z-]+\.js|assets\/(?:diary-pets|studygram-mark|avatars\/[a-z-]+)\.svg)$/;
+const staticFile = /^\/(?:index\.html|(?:style|brand|wisdom|explore|growth|pursuit|academy|community|settings)\.css|pages\/[a-z-]+\.html|js\/[a-z-]+\.js|assets\/(?:diary-pets|studygram-mark|avatars\/[a-z-]+)\.svg)$/;
 const pdfAsset = /^\/vendor\/(pdf(?:\.worker)?\.mjs)$/;
 const localHost = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i;
 const adminPath = /^\/(?:pages\/|api\/)?(?:admin|moderator|moderation)(?:[-./]|$)/i;
@@ -96,6 +96,7 @@ function createRequestBudget(perMinute, concurrent) {
 }
 
 function createStudygramServer(model = generateText, reelOptions = {}, eventOptions = {}, communityOptions = {}, transport = {}) {
+  const usesMeta = model === generateText;
   const reels = createReelJobs({
     directory: resolve(root, ".studygram-reels"),
     ...reelOptions,
@@ -104,7 +105,14 @@ function createStudygramServer(model = generateText, reelOptions = {}, eventOpti
   const getEvents = createEventFeed(eventOptions);
   const community = createCommunityHandler({ ...communityOptions, origin: transport.origin || communityOptions.origin }, { readInput, respond, reelJobs: reels });
   const modelBudget = createRequestBudget(24, 6);
+  const connectionBudget = createRequestBudget(12, 4);
   const lookupBudget = createRequestBudget(18, 4);
+  function metaCredentials(request) {
+    if (!getMetaConnection().enabled) throw metaError("META_DISABLED");
+    const apiKey = validateMetaKey(request.headers["x-studygram-meta-key"]);
+    if (request.headers["x-studygram-meta-adult"] !== "1") throw metaError("META_ADULT_REQUIRED");
+    return apiKey;
+  }
   const handle = async (request, response) => {
     const secure = Boolean(request.socket.encrypted);
     setSecurityHeaders(response, secure);
@@ -131,6 +139,27 @@ function createStudygramServer(model = generateText, reelOptions = {}, eventOpti
     const task = Object.hasOwn(tasks, path) ? tasks[path] : null;
     try {
       if (path.startsWith("/api/community/")) return await community.handle(request, response, path);
+      if (path === "/api/meta-connection") {
+        if (request.method === "GET") return respond(response, 200, getMetaConnection());
+        if (request.method !== "POST") return respond(response, 405, { error: "Use GET or POST." });
+        if (!/^application\/json(?:;|$)/i.test(request.headers["content-type"] || "")) {
+          return respond(response, 415, { error: "Use a JSON request." });
+        }
+        const input = await readInput(request, 4096);
+        const member = community.session(request);
+        if (!member) return respond(response, 401, { error: "Sign in to connect your Meta API key." });
+        if (input.accountId !== member.id) {
+          return respond(response, 409, { error: "Your Studygram account changed. Reload this page and try again." });
+        }
+        const apiKey = metaCredentials(request);
+        const finish = connectionBudget(`member:${member.id}`, response);
+        if (!finish) return;
+        try {
+          return respond(response, 200, await verifyMetaConnection({ apiKey }));
+        } finally {
+          finish();
+        }
+      }
       if (path === "/api/events") {
         if (request.method !== "GET") return respond(response, 405, { error: "Use GET." });
         return respond(response, 200, await getEvents());
@@ -195,19 +224,24 @@ function createStudygramServer(model = generateText, reelOptions = {}, eventOpti
         if (!input || !task.validInput(input)) {
           return respond(response, 400, { error: "Check your topic and trim any long notes before trying again." });
         }
-        const member = transport.requireAccount || path === "/api/study-set" ? community.session(request) : null;
-        if (transport.requireAccount && !member) return respond(response, 401, { error: "Sign in to use live AI." });
-        if (path === "/api/study-set" && Object.hasOwn(input, "accountId") && input.accountId !== member?.id) {
+        if (usesMeta && !getMetaConnection().enabled) throw metaError("META_DISABLED");
+        const member = usesMeta || transport.requireAccount || path === "/api/study-set" || Object.hasOwn(input, "accountId")
+          ? community.session(request) : null;
+        if ((usesMeta || transport.requireAccount) && !member) return respond(response, 401, { error: "Sign in to use live AI." });
+        if (Object.hasOwn(input, "accountId") && input.accountId !== member?.id) {
           return respond(response, 409, { error: "Your Studygram account changed. Reload this page and try again." });
         }
+        const apiKey = usesMeta ? metaCredentials(request) : undefined;
         const bucket = member ? `member:${member.id}` : request.socket.remoteAddress;
         const modelInput = task.formatInput ? task.formatInput(input) : input;
         const finish = modelBudget(bucket, response);
         if (!finish) return;
         let raw;
         try {
-          raw = await model({ instructions: task.instructions, input: modelInput });
+          raw = await model({ instructions: task.instructions, input: modelInput, ...(usesMeta ? { apiKey } : {}) });
         } catch (error) {
+          const meta = usesMeta && publicMetaError(error);
+          if (meta) return respond(response, meta.status, meta.body);
           if (error.name === "TimeoutError") return respond(response, 504, { error: "The AI took too long. Try again." });
           if (error.status === 429) return respond(response, 429, { error: "Live AI is busy. Try again in a moment." });
           return respond(response, error.status === 503 ? 503 : 502, { error: "Live AI is temporarily unavailable. Try again in a moment." });
@@ -260,6 +294,8 @@ function createStudygramServer(model = generateText, reelOptions = {}, eventOpti
         return;
       }
       if (error.code === "ENOENT") return respond(response, 404, { error: "Page not found." });
+      const meta = publicMetaError(error);
+      if (meta) return respond(response, meta.status, meta.body);
       if ([400, 401, 403, 404, 409, 410, 413, 415, 429].includes(error.status)) {
         return respond(response, error.status, { error: error.message });
       }

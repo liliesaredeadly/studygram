@@ -111,3 +111,66 @@ test("browser state reads only the authenticated snapshot and clears it when the
   assert.equal(reloads, 1);
   assert.equal(session.get("sg_diary"), null);
 });
+
+function openSession({ fetch, pathname = '/pages/diary.html' }) {
+  const navigations = [];
+  const listeners = new Map();
+  const nodes = [];
+  const makeNode = tag => ({ tag, children: [], style: {},
+    setAttribute(name, value) { this[name] = value; },
+    removeAttribute(name) { delete this[name]; },
+    append(...children) { this.children.push(...children); },
+    addEventListener(name, handler) { this[name] = handler; },
+    focus() {},
+  });
+  const body = makeNode('body');
+  body.children.push(makeNode('main'));
+  const document = { body, hidden: false, documentElement: { style: {} },
+    addEventListener() {}, createElement(tag) { const node = makeNode(tag); nodes.push(node); return node; } };
+  const window = { location: { pathname, search: '', hash: '',
+    assign: url => navigations.push(url), replace: url => navigations.push(url),
+    reload: () => navigations.push('reload') },
+    addEventListener: (name, fn) => listeners.set(name, fn) };
+  const session = runInNewContext(`${readFileSync('js/private-session.js', 'utf8')}\nStudygramPrivateSession`, {
+    window, document, fetch, AbortSignal, setTimeout, clearTimeout, queueMicrotask,
+  });
+  return { session, navigations, listeners, nodes, document };
+}
+
+test('a failed session check offers retry instead of sending every protected page to login', async () => {
+  for (const page of ['study', 'lesson', 'quiz', 'diary', 'growth', 'pursuit', 'focus', 'login']) {
+    const { session, navigations, nodes } = openSession({ pathname: `/pages/${page}.html`,
+      fetch: async () => { throw new TypeError('Network unavailable'); } });
+    await session.ready;
+    assert.equal(session.unavailable(), true);
+    assert.deepEqual(navigations, []);
+    const retry = nodes.find(node => node.tag === 'button');
+    assert.ok(retry, 'offer a way to retry the session check');
+    retry.click();
+    assert.deepEqual(navigations, ['reload']);
+  }
+});
+
+test('repeated account-required actions navigate to sign in only once', async () => {
+  const { session, navigations } = openSession({ pathname: '/index.html',
+    fetch: async () => ({ ok: true, json: async () => ({ user: null, data: {} }) }) });
+  await session.ready;
+  assert.equal(session.requireAccount(), false);
+  assert.equal(session.requireAccount(), false);
+  assert.equal(navigations.length, 1);
+});
+
+test('rate limits do not become login redirects, and a confirmed signed-out session still requires login', async () => {
+  const failed = openSession({ fetch: async () => ({ ok: false, status: 429,
+    json: async () => ({ error: 'Try again shortly.' }) }) });
+  await failed.session.ready;
+  assert.deepEqual(failed.navigations, []);
+  assert.equal(failed.document.body.children[0].inert, true);
+  let initialized = false;
+  await failed.session.start(() => { initialized = true; });
+  assert.equal(initialized, false);
+  const signedOut = openSession({ fetch: async () => ({ ok: true,
+    json: async () => ({ user: null, data: {} }) }) });
+  await signedOut.session.ready;
+  assert.deepEqual(signedOut.navigations, ['/pages/login.html?return=%2Fpages%2Fdiary.html']);
+});
